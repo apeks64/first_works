@@ -195,7 +195,7 @@ function processFormWithRowNumbers(rowNumbersStr, templates, firm, date1Str, dat
         body.replaceText(placeholder, docPlaceholders[placeholder]);
       }
 
-      // **YENİ DEĞİŞİKLİK: Tabloyu bul ve değiştir**
+      // **YENİ DEĞİŞİKLİK: Tabloyu her zaman en sona ekle ve metni sil**
       let placeholderParagraph = null;
       for (let i = 0; i < body.getNumChildren(); i++) {
         const child = body.getChild(i);
@@ -207,54 +207,32 @@ function processFormWithRowNumbers(rowNumbersStr, templates, firm, date1Str, dat
         }
       }
 
+      // Tabloyu belgenin en sonuna ekle
+      const table = body.appendTable();
+      table.clear();
+      table.setBorderWidth(1);
+      const headerRow = table.appendTableRow();
+      headerRow.appendTableCell('Sıra No');
+      headerRow.appendTableCell('TC Kimlik No');
+      headerRow.appendTableCell('Adı Soyadı');
+      headerRow.appendTableCell('Unvanı/Mesleği');
+      headerRow.appendTableCell('İmza');
+
+      let sıraNo = 1;
+      selectedPersonnel.forEach(p => {
+        const dataRow = table.appendTableRow();
+        dataRow.appendTableCell(sıraNo++);
+        dataRow.appendTableCell(p['TC Kimlik No'] || '');
+        dataRow.appendTableCell(`${p['Adı'] || ''} ${p['Soyadı'] || ''}`);
+        dataRow.appendTableCell(p['İşi'] || '');
+        dataRow.appendTableCell('');
+      });
+      
+      // Eğer yer tutucu metni varsa, tabloyu ekledikten sonra onu sil
       if (placeholderParagraph) {
-        // Tabloyu bulanan paragrafın yerine ekle
-        const table = placeholderParagraph.getParent().insertTable(placeholderParagraph.getParent().getChildIndex(placeholderParagraph));
-        
-        // Placeholder paragrafını kaldır
         placeholderParagraph.removeFromParent();
-
-        // Tablonun içini temizle (varsa) ve başlık satırını ekle
-        table.clear();
-        table.setBorderWidth(1);
-        const headerRow = table.appendTableRow();
-        headerRow.appendTableCell('Sıra No'); // Yeni sütun
-        headerRow.appendTableCell('TC Kimlik No');
-        headerRow.appendTableCell('Adı Soyadı');
-        headerRow.appendTableCell('Unvanı/Mesleği'); // Başlık düzeltildi
-        headerRow.appendTableCell('İmza'); // Yeni sütun
-
-        let sıraNo = 1;
-        selectedPersonnel.forEach(p => {
-          const dataRow = table.appendTableRow();
-          dataRow.appendTableCell(sıraNo++); // Sıra No eklendi
-          dataRow.appendTableCell(p['TC Kimlik No'] || '');
-          dataRow.appendTableCell(`${p['Adı'] || ''} ${p['Soyadı'] || ''}`);
-          dataRow.appendTableCell(p['İşi'] || '');
-          dataRow.appendTableCell(''); // İmza için boş hücre
-        });
-      } else {
-        // Eğer yer tutucu metin bulunamazsa, tabloyu belgenin en sonuna ekle
-        const table = body.appendTable();
-        table.clear();
-        table.setBorderWidth(1);
-        const headerRow = table.appendTableRow();
-        headerRow.appendTableCell('Sıra No'); // Yeni sütun
-        headerRow.appendTableCell('TC Kimlik No');
-        headerRow.appendTableCell('Adı Soyadı');
-        headerRow.appendTableCell('Unvanı/Mesleği'); // Başlık düzeltildi
-        headerRow.appendTableCell('İmza'); // Yeni sütun
-
-        let sıraNo = 1;
-        selectedPersonnel.forEach(p => {
-          const dataRow = table.appendTableRow();
-          dataRow.appendTableCell(sıraNo++); // Sıra No eklendi
-          dataRow.appendTableCell(p['TC Kimlik No'] || '');
-          dataRow.appendTableCell(`${p['Adı'] || ''} ${p['Soyadı'] || ''}`);
-          dataRow.appendTableCell(p['İşi'] || '');
-          dataRow.appendTableCell(''); // İmza için boş hücre
-        });
       }
+
 
       doc.saveAndClose();
       totalDocsCreated++;
