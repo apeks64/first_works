@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+    h2 {
+      margin-top: 0;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      box-sizing: border-box;
+    }
+    .search-input-group {
+      margin-bottom: 15px;
+    }
+    #resultsTable {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    #resultsTable th, #resultsTable td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+      cursor: pointer;
+      word-wrap: break-word;
+    }
+    #resultsTable th {
+      background-color: #f2f2f2;
+    }
+    
+    /* Burası, arama sonuçları listesindeki yazı fontunu ayarlayabileceğiniz kısımdır. */
+    #resultsTable td {
+      font-size: 11px; /* Bu değeri değiştirerek font boyutunu ayarlayın */
+    }
+    
+    #resultsTable tbody tr:hover {
+      background-color: #f9f9f9;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Personel Arama ve Yönlendirme</h2>
+  <div class="search-input-group">
+    <label for="isYeriAdiInput">İş Yerinin Adı:</label>
+    <input type="text" id="isYeriAdiInput" placeholder="İş Yeri Adını Girin" onkeyup="searchData()">
+  </div>
+  
+  <div class="search-input-group">
+    <label for="adiInput">Adı:</label>
+    <input type="text" id="adiInput" placeholder="Adını Girin" onkeyup="searchData()">
+  </div>
+
+  <div class="search-input-group">
+    <label for="soyadiInput">Soyadı:</label>
+    <input type="text" id="soyadiInput" placeholder="Soyadını Girin" onkeyup="searchData()">
+  </div>
+
+  <div id="results"></div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        searchData();
+    });
+
+    function searchData() {
+      const isYeriAdi = document.getElementById('isYeriAdiInput').value.trim();
+      const adi = document.getElementById('adiInput').value.trim();
+      const soyadi = document.getElementById('soyadiInput').value.trim();
+
+      google.script.run
+        .withSuccessHandler(displayResults)
+        .searchEmployees(isYeriAdi, adi, soyadi);
+    }
+
+    function displayResults(data) {
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.innerHTML = '';
+
+      if (data.length === 0) {
+        resultsDiv.innerHTML = '<p>Eşleşen personel bulunamadı.</p>';
+        return;
+      }
+
+      const table = document.createElement('table');
+      table.id = 'resultsTable';
+      const header = table.createTHead();
+      const row = header.insertRow(0);
+
+      const headers = ['İş Yeri Adı', 'Adı', 'Soyadı'];
+      headers.forEach(h => {
+        row.insertCell().innerHTML = `<b>${h}</b>`;
+      });
+
+      const body = table.createTBody();
+      data.forEach(rowData => {
+        const tr = body.insertRow();
+        tr.onclick = () => google.script.run.goToRow(rowData[0]); 
+        
+        const displayData = [rowData[1], rowData[2], rowData[3]];
+        displayData.forEach(cellData => {
+          const td = tr.insertCell();
+          td.textContent = cellData;
+        });
+      });
+
+      resultsDiv.appendChild(table);
+    }
+  </script>
+
+</body>
+</html>

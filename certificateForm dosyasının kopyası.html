@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 15px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+      input[type="text"], select {
+        width: calc(100% - 22px);
+        padding: 8px;
+        margin-bottom: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+      input[type="text"][disabled] {
+        background-color: #f0f0f0;
+        cursor: not-allowed;
+      }
+      .date-input-container {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+      .date-input-container input {
+        flex-grow: 1;
+        margin-right: 5px;
+      }
+      .date-button {
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+      }
+      .date-button:hover {
+        background-color: #45a049;
+      }
+      #firmSearchBox {
+        width: 100%;
+        padding: 8px;
+        box-sizing: border-box;
+      }
+      #firmList {
+        width: 100%;
+        max-height: 150px;
+        overflow-y: auto;
+        border: 1px solid #ccc;
+        margin-top: 5px;
+        box-sizing: border-box;
+        display: none;
+      }
+      .firm-option {
+        padding: 8px;
+        cursor: pointer;
+      }
+      .firm-option:hover {
+        background-color: #eee;
+      }
+      button {
+        background-color: #008CBA;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+        margin-top: 10px;
+      }
+      button:hover {
+        background-color: #007bb5;
+      }
+      #resultMessage {
+        margin-top: 20px;
+        color: green;
+        font-weight: bold;
+      }
+      #progressMessage {
+        margin-top: 15px;
+        color: #333;
+        font-style: italic;
+      }
+      .checkbox-container {
+        border: 1px solid #ddd;
+        padding: 10px;
+        max-height: 300px;
+        overflow-y: auto;
+        margin-bottom: 10px;
+        background-color: #fff;
+        border-radius: 4px;
+      }
+      .checkbox-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 5px;
+        padding: 3px 0;
+      }
+      .checkbox-item input[type="checkbox"] {
+        width: auto;
+        margin: 0 8px 0 0;
+        position: relative;
+        top: -1px;
+      }
+      .checkbox-item label {
+        font-weight: normal;
+        margin-bottom: 0;
+        cursor: pointer;
+        flex-grow: 1;
+        color: #333;
+        font-size: 13px;
+      }
+      .action-buttons {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 15px;
+        gap: 10px;
+      }
+      .action-buttons button {
+        width: 48%;
+        padding: 8px 12px;
+        font-size: 14px;
+        margin-top: 0;
+        background-color: #6c757d;
+      }
+      .action-buttons button:hover {
+        background-color: #5a6268;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Sertifika Oluştur</h2>
+    <form id="certificateForm">
+
+      <label for="firmSearchBox">Firma Ara:</label><br>
+      <input type="text" id="firmSearchBox" placeholder="Firma adı girin..." autocomplete="off"><br>
+      <div id="firmList"></div><br>
+      <input type="hidden" id="selectedFirm" name="selectedFirm">
+
+      <label for="mainFilterInput">Personel Ara (İş Yeri, Adı, Soyadı ile):</label>
+      <input type="text" id="mainFilterInput" oninput="debounceFilter()" placeholder="İş yeri adı, ad veya soyad girin..." autocomplete="off">
+    
+      <label>Eşleşen Personelleri Seç:</label>
+      <div id="personnelCheckboxes" class="checkbox-container">
+        <p style="text-align: center; color: #777;">Arama yapmak için yukarıdaki kutuya bir değer girin.</p>
+      </div>
+
+      <div class="action-buttons">
+        <button type="button" onclick="selectAllCheckboxes()">Tümünü Seç</button>
+        <button type="button" onclick="clearAllCheckboxes()">Tümünü Kaldır</button>
+      </div>
+
+      <label for="templates">Şablonlar (Birden fazla ise Ctrl ile seçin):</label><br>
+      <select id="templates" name="templates" multiple required style="width: 100%; height: 150px;">
+        <option value="1">temel_yc_8_8</option>
+        <option value="2">temel8</option>
+        <option value="3">temel8.4</option>
+        <option value="4">yc</option>
+        <option value="5">katilan_listesi</option>
+        <option value="6">kkd</option>
+        <option value="7">yc_talimatı</option>
+        <option value="8">temel_8_8</option>
+        <option value="9">sınav_soruları</option>
+        <option value="10">konulu_sertifika</option>
+      </select><br><br>
+
+      <label>Tarihler:</label><br>
+
+      <div class="date-input-container">
+        <input type="text" id="date1" name="date1" required>
+        <button type="button" class="date-button" onclick="changeDate('date1', -1)">&lt;</button>
+        <button type="button" class="date-button" onclick="changeDate('date1', 1)">&gt;</button>
+        <span style="margin-left: 10px;">Eğitimin ilk günü</span>
+      </div>
+
+      <div class="date-input-container">
+        <input type="text" id="date2" name="date2" disabled style="background-color: #e9e9e9;">
+        <button type="button" class="date-button" onclick="changeDate('date2', -1)" disabled style="background-color: #c0c0c0; cursor: not-allowed;">&lt;</button>
+        <button type="button" class="date-button" onclick="changeDate('date2', 1)" disabled style="background-color: #c0c0c0; cursor: not-allowed;">&gt;</button>
+        <span style="margin-left: 10px;">Sertifika Geçerlilik Bitiş (otomatik)</span>
+      </div>
+
+      <div class="date-input-container">
+        <input type="text" id="date3" name="date3" required>
+        <button type="button" class="date-button" onclick="changeDate('date3', -1)">&lt;</button>
+        <button type="button" class="date-button" onclick="changeDate('date3', 1)">&gt;</button>
+        <span style="margin-left: 10px;">Eğitimin 2. günü</span>
+      </div>
+
+      <div class="date-input-container">
+        <input type="text" id="date4" name="date4" disabled style="background-color: #e9e9e9;">
+        <button type="button" class="date-button" onclick="changeDate('date4', -1)" disabled style="background-color: #c0c0c0; cursor: not-allowed;">&lt;</button>
+        <button type="button" class="date-button" onclick="changeDate('date4', 1)" disabled style="background-color: #c0c0c0; cursor: not-allowed;">&gt;</button>
+        <span style="margin-left: 10px;">Sertifika Geçerlilik Bitiş (otomatik)</span>
+      </div>
+
+      <div class="date-input-container">
+        <input type="text" id="date5" name="date5" required>
+        <button type="button" class="date-button" onclick="changeDate('date5', -1)">&lt;</button>
+        <button type="button" class="date-button" onclick="changeDate('date5', 1)">&gt;</button>
+        <span style="margin-left: 10px;">Eğitimin 3. günü</span>
+      </div>
+
+      <div class="date-input-container">
+        <input type="text" id="date6" name="date6" disabled style="background-color: #e9e9e9;">
+        <button type="button" class="date-button" onclick="changeDate('date6', -1)" disabled style="background-color: #c0c0c0; cursor: not-allowed;">&lt;</button>
+        <button type="button" class="date-button" onclick="changeDate('date6', 1)" disabled style="background-color: #c0c0c0; cursor: not-allowed;">&gt;</button>
+        <span style="margin-left: 10px;">Sertifika Geçerlilik Bitiş (otomatik)</span>
+      </div>
+      
+      <button type="submit">Sertifika Oluştur</button>
+    </form>
+
+    <div id="progressMessage" style="display:none;"></div>
+
+    <div id="resultMessage" style="display:none;">
+      <p>Bitti! Sertifikalar başarıyla oluşturuldu.</p>
+      <a href="https://drive.google.com/drive/folders/1yrwxxbb7WA2MxQ0UoZ5LN9jJahOaD5Uq" target="_blank">Sertifikalarınızı buradan görüntüleyebilirsiniz.</a><br>
+      <a href="https://script.google.com/macros/s/AKfycby0speUpHZz1BwVuz_qvrIud0VyPAHhVvtSI7GMXnDNE2rqSQJfU2nXkfX35a4zDV3E/exec" target="_blank">İSG Belge Yönetimi için TIKLAYINIZ.</a>
+    </div>
+
+    <script>
+      let allFirms = [];
+      let selectedFirmExact = "";
+
+      google.script.run.withSuccessHandler(function(firms) {
+        allFirms = firms;
+      }).getFirmList();
+      
+      let filterTimeout;
+      const debounceDelay = 300;
+      function debounceFilter() {
+          clearTimeout(filterTimeout);
+          filterTimeout = setTimeout(() => {
+              const filterValue = document.getElementById("mainFilterInput").value;
+              loadFilteredPersonnel(filterValue);
+          }, debounceDelay);
+      }
+
+      function loadFilteredPersonnel(filterValue) {
+          const personnelDiv = document.getElementById("personnelCheckboxes");
+          personnelDiv.innerHTML = "<p style='text-align: center; color: #777;'>Personeller aranıyor... Lütfen bekleyiniz.</p>";
+          google.script.run
+              .withSuccessHandler(displayPersonnel)
+              .withFailureHandler(function(error) {
+                  personnelDiv.innerHTML = "<p style='text-align: center; color: #777;'>Personel yüklenirken bir hata oluştu.</p>";
+                  console.error(error);
+              })
+              .getFilteredPersonnel(filterValue);
+      }
+    
+      function displayPersonnel(personnelToDisplay) {
+        const div = document.getElementById("personnelCheckboxes");
+        div.innerHTML = "";
+        if (!personnelToDisplay || personnelToDisplay.length === 0) {
+          div.innerHTML = "<p style='text-align: center; color: #777;'>Arama yapmak için yukarıdaki kutuya bir değer girin veya eşleşen personel bulunamadı.</p>";
+          return;
+        }
+        personnelToDisplay.forEach(p => {
+          const checkboxContainer = document.createElement("div");
+          checkboxContainer.className = "checkbox-item";
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.id = `personel_${p.tc}`;
+          checkbox.value = JSON.stringify(p);
+          const label = document.createElement("label");
+          label.htmlFor = checkbox.id;
+          label.textContent = `${p.bValue || ''} - ${p.ad} ${p.soyad}`;
+          checkboxContainer.appendChild(checkbox);
+          checkboxContainer.appendChild(label);
+          div.appendChild(checkboxContainer);
+        });
+      }
+
+      function selectAllCheckboxes() {
+        document.querySelectorAll('#personnelCheckboxes input[type="checkbox"]').forEach(checkbox => {
+          checkbox.checked = true;
+        });
+      }
+
+      function clearAllCheckboxes() {
+        document.querySelectorAll('#personnelCheckboxes input[type="checkbox"]').forEach(checkbox => {
+          checkbox.checked = false;
+        });
+      }
+      
+      function formatDateToDDMMYYYY(date) {
+        const d = new Date(date);
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}/${month}/${year}`;
+      }
+
+      function parseDateFromDDMMYYYY(dateString) {
+        const parts = dateString.split('/');
+        return new Date(parts[2], parts[1] - 1, parts[0]);
+      }
+
+      function initializeDates() {
+        const today = new Date();
+        const nextBusinessDay1 = getNextBusinessDay(today);
+        const nextBusinessDay2 = getNextBusinessDay(nextBusinessDay1);
+
+        document.getElementById('date1').value = formatDateToDDMMYYYY(today);
+        document.getElementById('date3').value = formatDateToDDMMYYYY(nextBusinessDay1);
+        document.getElementById('date5').value = formatDateToDDMMYYYY(nextBusinessDay2);
+        
+        updateDependentDates();
+      }
+
+      function updateDependentDates() {
+        try {
+            const date1 = parseDateFromDDMMYYYY(document.getElementById('date1').value);
+            const date3 = parseDateFromDDMMYYYY(document.getElementById('date3').value);
+            const date5 = parseDateFromDDMMYYYY(document.getElementById('date5').value);
+
+            const date2 = new Date(date1); date2.setFullYear(date2.getFullYear() + 1);
+            const date4 = new Date(date3); date4.setFullYear(date4.getFullYear() + 1);
+            const date6 = new Date(date5); date6.setFullYear(date6.getFullYear() + 1);
+
+            document.getElementById('date2').value = formatDateToDDMMYYYY(date2);
+            document.getElementById('date4').value = formatDateToDDMMYYYY(date4);
+            document.getElementById('date6').value = formatDateToDDMMYYYY(date6);
+        } catch (e) {
+            console.error("Tarih güncelleme hatası:", e);
+        }
+      }
+
+      function changeDate(elementId, days) {
+        const input = document.getElementById(elementId);
+        let currentDate = parseDateFromDDMMYYYY(input.value);
+
+        if (days === 1) { // İleri
+          currentDate = getNextBusinessDay(currentDate);
+        } else if (days === -1) { // Geri
+          currentDate = getPreviousBusinessDay(currentDate);
+        }
+        input.value = formatDateToDDMMYYYY(currentDate);
+        updateDependentDates();
+      }
+
+      function getNextBusinessDay(date) {
+        let d = new Date(date);
+        do { d.setDate(d.getDate() + 1); } while (d.getDay() === 0 || d.getDay() === 6);
+        return d;
+      }
+      function getPreviousBusinessDay(date) {
+        let d = new Date(date);
+        do { d.setDate(d.getDate() - 1); } while (d.getDay() === 0 || d.getDay() === 6);
+        return d;
+      }
+      
+      document.addEventListener('DOMContentLoaded', initializeDates);
+      document.getElementById('date1').addEventListener('change', updateDependentDates);
+      document.getElementById('date3').addEventListener('change', updateDependentDates);
+      document.getElementById('date5').addEventListener('change', updateDependentDates);
+
+      document.getElementById("firmSearchBox").addEventListener("input", function() {
+        const filter = this.value.toLowerCase();
+        const firmListDiv = document.getElementById("firmList");
+        firmListDiv.innerHTML = "";
+        selectedFirmExact = "";
+        if (filter.length === 0) {
+          firmListDiv.style.display = 'none';
+          document.getElementById("selectedFirm").value = "";
+          return;
+        }
+        const filteredFirms = allFirms.filter(firm => firm.toLowerCase().includes(filter));
+        if (filteredFirms.length > 0) {
+          firmListDiv.style.display = 'block';
+          filteredFirms.forEach(firm => {
+            const div = document.createElement("div");
+            div.textContent = firm;
+            div.className = "firm-option";
+            div.onclick = function() {
+              document.getElementById("firmSearchBox").value = firm;
+              document.getElementById("selectedFirm").value = firm;
+              selectedFirmExact = firm;
+              firmListDiv.innerHTML = "";
+              firmListDiv.style.display = 'none';
+            };
+            firmListDiv.appendChild(div);
+          });
+        } else {
+          firmListDiv.style.display = 'none';
+          document.getElementById("selectedFirm").value = "";
+        }
+        const exactMatch = allFirms.find(firm => firm.toLowerCase() === filter);
+        if (exactMatch) {
+          document.getElementById("selectedFirm").value = exactMatch;
+          selectedFirmExact = exactMatch;
+          firmListDiv.style.display = 'none';
+        }
+      });
+
+      document.getElementById("certificateForm").addEventListener("submit", function(event) {
+          event.preventDefault();
+
+          const selectedCheckboxes = Array.from(document.querySelectorAll('#personnelCheckboxes input[type="checkbox"]:checked'));
+          if (selectedCheckboxes.length === 0) {
+              alert("Lütfen en az bir personel seçin.");
+              return;
+          }
+
+          const selectedPersonnel = selectedCheckboxes.map(cb => JSON.parse(cb.value));
+
+          const templates = Array.from(document.getElementById("templates").options)
+              .filter(option => option.selected)
+              .map(option => parseInt(option.value));
+
+          if (templates.length === 0) {
+              alert("Lütfen en az bir şablon seçin.");
+              return;
+          }
+          
+          const firm = document.getElementById("selectedFirm").value;
+          const date1 = document.getElementById("date1").value;
+          const date3 = document.getElementById("date3").value;
+          const date5 = document.getElementById("date5").value;
+
+          const progressMessageDiv = document.getElementById("progressMessage");
+          progressMessageDiv.style.display = "block";
+          progressMessageDiv.textContent = `0/${selectedPersonnel.length} belge oluşturuluyor...`;
+
+          document.getElementById("resultMessage").style.display = "none";
+          
+          google.script.run
+              .withSuccessHandler(function() {
+                  progressMessageDiv.style.display = "none";
+                  document.getElementById("resultMessage").style.display = "block";
+              })
+              .withFailureHandler(function(error) {
+                  progressMessageDiv.style.display = "block";
+                  progressMessageDiv.style.color = "red";
+                  progressMessageDiv.textContent = "Hata oluştu: " + error.message;
+                  console.error(error);
+              })
+              .processSelectedPersonnel(selectedPersonnel, templates, firm, date1, date3, date5);
+      });
+
+    </script>
+  </body>
+</html>

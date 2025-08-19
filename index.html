@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 15px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+      input[type="text"], select {
+        width: calc(100% - 22px);
+        padding: 8px;
+        margin-bottom: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+      input[type="text"][disabled] {
+        background-color: #f0f0f0;
+        cursor: not-allowed;
+      }
+      .date-group {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 15px;
+      }
+      .date-group .date-container {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .date-group .date-container input[type="text"] {
+        flex-grow: 1;
+        margin-right: 0;
+      }
+      .date-group .hours-container {
+        display: flex;
+        align-items: center;
+        margin-top: 5px;
+        gap: 5px;
+      }
+      .date-group .hours-container input {
+        flex-grow: 1;
+      }
+      .date-group .hours-container label {
+        flex-shrink: 0;
+        margin-bottom: 0;
+      }
+      .date-group .disabled-input {
+        background-color: #e9e9e9;
+      }
+      .date-button {
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+      }
+      .date-button:disabled {
+        background-color: #c0c0c0;
+        cursor: not-allowed;
+      }
+      #firmSearchBox {
+        width: 100%;
+        padding: 8px;
+        box-sizing: border-box;
+      }
+      #firmList {
+        width: 100%;
+        max-height: 150px;
+        overflow-y: auto;
+        border: 1px solid #ccc;
+        margin-top: 5px;
+        box-sizing: border-box;
+        display: none;
+      }
+      .firm-option {
+        padding: 8px;
+        cursor: pointer;
+      }
+      .firm-option:hover {
+        background-color: #eee;
+      }
+      button {
+        background-color: #008CBA;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+        margin-top: 10px;
+      }
+      button:hover {
+        background-color: #007bb5;
+      }
+      #resultMessage {
+        margin-top: 20px;
+        color: green;
+        font-weight: bold;
+      }
+      #progressMessage {
+        margin-top: 15px;
+        color: #333;
+        font-style: italic;
+      }
+      .checkbox-container {
+        border: 1px solid #ddd;
+        padding: 10px;
+        max-height: 300px;
+        overflow-y: auto;
+        margin-bottom: 10px;
+        background-color: #fff;
+        border-radius: 4px;
+      }
+      .checkbox-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 5px;
+        padding: 3px 0;
+      }
+      .checkbox-item input[type="checkbox"] {
+        width: auto;
+        margin: 0 8px 0 0;
+        position: relative;
+        top: -1px;
+      }
+      .checkbox-item label {
+        font-weight: normal;
+        margin-bottom: 0;
+        cursor: pointer;
+        flex-grow: 1;
+        color: #333;
+        font-size: 13px;
+      }
+      .action-buttons {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 15px;
+        gap: 10px;
+      }
+      .action-buttons button {
+        width: 48%;
+        padding: 8px 12px;
+        font-size: 14px;
+        margin-top: 0;
+        background-color: #6c757d;
+      }
+      .action-buttons button:hover {
+        background-color: #5a6268;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Sertifika Oluştur</h2>
+    <form id="certificateForm">
+
+      <label for="firmSearchBox">Firma Ara:</label><br>
+      <input type="text" id="firmSearchBox" placeholder="Firma adı girin..." autocomplete="off"><br>
+      <div id="firmList"></div><br>
+      <input type="hidden" id="selectedFirm" name="selectedFirm">
+
+      <label for="rowNumbers">Satır Numaraları (ör: 14,15,25-29):</label>
+      <input type="text" id="rowNumbers" name="rowNumbers" required placeholder="Örnek: 14,15,25-29">
+    
+      <label>Eğitim Konuları:</label>
+      <div id="trainingTopicCheckboxes" class="checkbox-container">
+     
+        <p style="text-align: center; color: #777;">Konular yükleniyor...</p>
+      </div>
+      <div class="action-buttons">
+        <button type="button" onclick="selectAllTopics()">Tümünü Seç</button>
+        <button type="button" onclick="clearAllTopics()">Tümünü Kaldır</button>
+      </div>
+
+      <label for="templates">Şablonlar (Birden fazla ise Ctrl ile seçin):</label><br>
+      <select id="templates" name="templates" multiple required style="width: 100%;
+        height: 150px;">
+        <option value="1">temel_yc_8_8</option>
+        <option value="2">temel8</option>
+        <option value="3">temel8.4</option>
+        <option value="4">yc</option>
+        <option value="5">katilan_listesi</option>
+        <option value="6">kkd</option>
+        <option value="7">yc_talimatı</option>
+        <option value="8">temel_8_8</option>
+        <option value="9">sınav_soruları</option>
+        <option value="10">konulu_sertifika</option>
+      </select><br><br>
+   
+      <label>Tarihler ve Saatler:</label><br>
+      
+      <div class="date-group">
+        <div class="date-container">
+          <input type="text" id="date1" name="date1" required placeholder="GG/AA/YYYY">
+          <button type="button" class="date-button" onclick="changeDate('date1', -1)">&lt;</button>
+          <button type="button" class="date-button" onclick="changeDate('date1', 1)">&gt;</button>
+        </div>
+        <div class="hours-container">
+       
+          <label>Saat:</label>
+          <input type="text" id="trainingHours1" name="trainingHours1" placeholder="Eğitim saati">
+        </div>
+      </div>
+
+      <div class="date-group">
+        <div class="date-container">
+          <input type="text" id="date2" name="date2" disabled class="disabled-input">
+          <span style="margin-left: 10px;">Geçerlilik Bitiş (otomatik)</span>
+        </div>
+      </div>
+
+      <div class="date-group">
+  
+        <div class="date-container">
+          <input type="text" id="date3" name="date3" placeholder="GG/AA/YYYY">
+          <button type="button" class="date-button" onclick="changeDate('date3', -1)">&lt;</button>
+          <button type="button" class="date-button" onclick="changeDate('date3', 1)">&gt;</button>
+        </div>
+        <div class="hours-container">
+          <label>Saat:</label>
+          <input type="text" id="trainingHours2" name="trainingHours2" placeholder="Eğitim saati">
+        </div>
+ 
+      </div>
+
+      <div class="date-group">
+        <div class="date-container">
+          <input type="text" id="date4" name="date4" disabled class="disabled-input">
+          <span style="margin-left: 10px;">Geçerlilik Bitiş (otomatik)</span>
+        </div>
+      </div>
+
+      <div class="date-group">
+        <div class="date-container">
+          <input type="text" id="date5" name="date5" placeholder="GG/AA/YYYY">
+      
+          <button type="button" class="date-button" onclick="changeDate('date5', -1)">&lt;</button>
+          <button type="button" class="date-button" onclick="changeDate('date5', 1)">&gt;</button>
+        </div>
+        <div class="hours-container">
+          <label>Saat:</label>
+          <input type="text" id="trainingHours3" name="trainingHours3" placeholder="Eğitim saati">
+        </div>
+      </div>
+
+      <div class="date-group">
+        <div class="date-container">
+      
+          <input type="text" id="date6" name="date6" disabled class="disabled-input">
+          <span style="margin-left: 10px;">Geçerlilik Bitiş (otomatik)</span>
+        </div>
+      </div>
+      
+      <button type="submit">Sertifika Oluştur</button>
+    </form>
+
+    <div id="progressMessage" style="display:none;"></div>
+
+    <div id="resultMessage" style="display:none;">
+      <p>Bitti!
+      Sertifikalar başarıyla oluşturuldu.</p>
+      <a href="https://drive.google.com/drive/folders/1yrwxxbb7WA2MxQ0UoZ5LN9jJahOaD5Uq" target="_blank">Sertifikalarınızı buradan görüntüleyebilirsiniz.</a><br>
+      <a href="https://script.google.com/macros/s/AKfycby0speUpHZz1BwVuz_qvrIud0VyPAHhVvtSI7GMXnDNE2rqSQJfU2nXkfX35a4zDV3E/exec" target="_blank">İSG Belge Yönetimi için TIKLAYINIZ.</a>
+    </div>
+
+    <script>
+      let allFirms = [];
+      let selectedFirmExact = "";
+
+      google.script.run.withSuccessHandler(function(firms) {
+        allFirms = firms;
+      }).getFirmList();
+      google.script.run.withSuccessHandler(function(titles) {
+        const div = document.getElementById('trainingTopicCheckboxes');
+        if (titles.length === 0) {
+            div.innerHTML = "<p style='text-align: center; color: #777;'>Konular yüklenirken hata oluştu veya 'EGITIM' sayfası boş.</p>";
+            return;
+        }
+        div.innerHTML = "";
+        titles.forEach(title => {
+          const 
+          checkboxContainer = document.createElement("div");
+          checkboxContainer.className = "checkbox-item";
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.name = "trainingTopic";
+          checkbox.value = title;
+          const label = document.createElement("label");
+          label.textContent = title;
+          label.htmlFor = 
+          checkbox.id;
+          checkboxContainer.appendChild(checkbox);
+          checkboxContainer.appendChild(label);
+          div.appendChild(checkboxContainer);
+        });
+      }).getTrainingTopicTitles();
+
+      function selectAllTopics() {
+        document.querySelectorAll('#trainingTopicCheckboxes input[type="checkbox"]').forEach(checkbox => {
+          checkbox.checked = true;
+        });
+      }
+
+      function clearAllTopics() {
+        document.querySelectorAll('#trainingTopicCheckboxes input[type="checkbox"]').forEach(checkbox => {
+          checkbox.checked = false;
+        });
+      }
+      
+      function formatDateToDDMMYYYY(date) {
+        const d = new Date(date);
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}/${month}/${year}`;
+      }
+
+      function parseDateFromDDMMYYYY(dateString) {
+        const parts = dateString.split('/');
+        return new Date(parts[2], parts[1] - 1, parts[0]);
+      }
+
+      function initializeDates() {
+        const today = new Date();
+        const nextBusinessDay1 = getNextBusinessDay(today);
+        const nextBusinessDay2 = getNextBusinessDay(nextBusinessDay1);
+
+        document.getElementById('date1').value = formatDateToDDMMYYYY(today);
+        document.getElementById('date3').value = formatDateToDDMMYYYY(nextBusinessDay1);
+        document.getElementById('date5').value = formatDateToDDMMYYYY(nextBusinessDay2);
+        
+        updateDependentDates();
+      }
+
+      function updateDependentDates() {
+        try {
+            const date1 = document.getElementById('date1').value;
+            const date3 = document.getElementById('date3').value;
+            const date5 = document.getElementById('date5').value;
+            
+            if(date1) {
+              const d1 = parseDateFromDDMMYYYY(date1);
+              const d2 = new Date(d1); d2.setFullYear(d2.getFullYear() + 1);
+              document.getElementById('date2').value = formatDateToDDMMYYYY(d2);
+            } else {
+              document.getElementById('date2').value = '';
+            }
+
+            if(date3) {
+              const d3 = parseDateFromDDMMYYYY(date3);
+              const d4 = new Date(d3); d4.setFullYear(d4.getFullYear() + 1);
+              document.getElementById('date4').value = formatDateToDDMMYYYY(d4);
+            } else {
+              document.getElementById('date4').value = '';
+            }
+
+            if(date5) {
+              const d5 = parseDateFromDDMMYYYY(date5);
+              const d6 = new Date(d5); d6.setFullYear(d6.getFullYear() + 1);
+              document.getElementById('date6').value = formatDateToDDMMYYYY(d6);
+            } else {
+              document.getElementById('date6').value = '';
+            }
+            
+        } catch (e) {
+            console.error("Tarih güncelleme hatası:", e);
+        }
+      }
+
+      function changeDate(elementId, days) {
+        const input = document.getElementById(elementId);
+        let currentDate = parseDateFromDDMMYYYY(input.value);
+
+        if (days === 1) { 
+          currentDate = getNextBusinessDay(currentDate);
+        } else if (days === -1) { 
+          currentDate = getPreviousBusinessDay(currentDate);
+        }
+        input.value = formatDateToDDMMYYYY(currentDate);
+        updateDependentDates();
+      }
+
+      function getNextBusinessDay(date) {
+        let d = new Date(date);
+        do { d.setDate(d.getDate() + 1); } while (d.getDay() === 0 || d.getDay() === 6);
+        return d;
+      }
+      function getPreviousBusinessDay(date) {
+        let d = new Date(date);
+        do { d.setDate(d.getDate() - 1); } while (d.getDay() === 0 || d.getDay() === 6);
+        return d;
+      }
+      
+      document.addEventListener('DOMContentLoaded', initializeDates);
+      document.getElementById('date1').addEventListener('change', updateDependentDates);
+      document.getElementById('date3').addEventListener('change', updateDependentDates);
+      document.getElementById('date5').addEventListener('change', updateDependentDates);
+      document.getElementById("firmSearchBox").addEventListener("input", function() {
+        const filter = this.value.toLowerCase();
+        const firmListDiv = document.getElementById("firmList");
+        firmListDiv.innerHTML = "";
+        selectedFirmExact = "";
+        if (filter.length === 0) {
+          firmListDiv.style.display = 'none';
+          document.getElementById("selectedFirm").value = "";
+          return;
+        }
+  
+        const filteredFirms = allFirms.filter(firm => firm.toLowerCase().includes(filter));
+        if (filteredFirms.length > 0) {
+          firmListDiv.style.display = 'block';
+          filteredFirms.forEach(firm => {
+            const div = document.createElement("div");
+            div.textContent = firm;
+            div.className = "firm-option";
+          
+            div.onclick = function() {
+              document.getElementById("firmSearchBox").value = firm;
+              document.getElementById("selectedFirm").value = firm;
+              selectedFirmExact = firm;
+              firmListDiv.innerHTML = "";
+              firmListDiv.style.display = 'none';
+            };
+            firmListDiv.appendChild(div);
+          });
+        } else {
+          firmListDiv.style.display = 'none';
+          document.getElementById("selectedFirm").value = "";
+        }
+        const exactMatch = allFirms.find(firm => firm.toLowerCase() === filter);
+        if (exactMatch) {
+          document.getElementById("selectedFirm").value = exactMatch;
+          selectedFirmExact = exactMatch;
+          firmListDiv.style.display = 'none';
+        }
+      });
+      document.getElementById("certificateForm").addEventListener("submit", function(event) {
+          event.preventDefault();
+
+          const rowNumbersStr = document.getElementById("rowNumbers").value;
+          if (!rowNumbersStr.trim()) {
+              alert("Lütfen satır numaralarını girin.");
+              return;
+          }
+
+          const templates = Array.from(document.getElementById("templates").options)
+         
+          .filter(option => option.selected)
+              .map(option => parseInt(option.value));
+
+          if (templates.length === 0) {
+              alert("Lütfen en az bir şablon seçin.");
+              return;
+          }
+
+          const selectedTopicNames = Array.from(document.querySelectorAll('#trainingTopicCheckboxes input[type="checkbox"]:checked'))
+      
+          .map(cb => cb.value);
+
+          if (selectedTopicNames.length === 0) {
+              alert("Lütfen en az bir eğitim konusu seçin.");
+              return;
+          }
+          
+          const firm = document.getElementById("selectedFirm").value;
+          const trainingHours1 = document.getElementById("trainingHours1").value;
+          const trainingHours2 = document.getElementById("trainingHours2").value;
+          const trainingHours3 = document.getElementById("trainingHours3").value;
+          const date1 = document.getElementById("date1").value;
+          const date3 = document.getElementById("date3").value;
+          const date5 = document.getElementById("date5").value;
+
+          const progressMessageDiv = document.getElementById("progressMessage");
+          progressMessageDiv.style.display = "block";
+          
+          // DÜZENLEME BAŞLANGIÇ
+          const KATILAN_LISTESI_ID_VALUE = 5; // katilan_listesi seçeneğinin değeri
+          let totalDocsCount = 0;
+          if (templates.length === 1 && templates[0] === KATILAN_LISTESI_ID_VALUE) {
+              totalDocsCount = 1;
+              progressMessageDiv.textContent = `Katılımcı Listesi belgesi oluşturuluyor...`;
+          } else {
+              const rowNumbers = rowNumbersStr.split(',').reduce((acc, current) => {
+                  const range = current.split('-');
+                  if (range.length === 2) {
+                      for (let i = parseInt(range[0]); i <= parseInt(range[1]); i++) {
+                          acc.push(i);
+                      }
+                  } else {
+                      acc.push(parseInt(current));
+                  }
+                  return acc;
+              }, []);
+              totalDocsCount = rowNumbers.length * templates.length;
+              progressMessageDiv.textContent = `Toplam ${totalDocsCount} belge oluşturuluyor...`;
+          }
+          // DÜZENLEME BİTİŞ
+
+          document.getElementById("resultMessage").style.display = "none";
+          
+          google.script.run
+              .withSuccessHandler(function(report) {
+                  progressMessageDiv.style.display = "none";
+                  document.getElementById("resultMessage").style.display = "block";
+
+                  // DÜZENLEME BAŞLANGIÇ
+                  if (report.success) {
+                      resultMessageDiv.style.color = "green";
+                      resultMessageDiv.textContent = "✅ İşlem tamamlandı! " + report.totalDocsCreated + " belge başarıyla oluşturuldu.";
+                  } else {
+                      resultMessageDiv.style.color = "red";
+                      let errorMessage = "⚠️ Bazı belgeler oluşturulamadı:\n\n";
+                      report.failedCreations.forEach(item => {
+                          errorMessage += `- "${item.template}" şablonunda hata: ${item.error}\n`;
+                      });
+                      resultMessageDiv.textContent = errorMessage;
+                  }
+                  // DÜZENLEME BİTİŞ
+              })
+              .withFailureHandler(function(error) {
+                
+                  progressMessageDiv.style.display = "block";
+                  progressMessageDiv.style.color = "red";
+                  progressMessageDiv.textContent = "Hata oluştu: " + error.message;
+                  console.error(error);
+              })
+              .processFormWithRowNumbers(rowNumbersStr, templates, firm, date1, date3, date5, 
+          trainingHours1, trainingHours2, trainingHours3, selectedTopicNames);
+      });
+    </script>
+  </body>
+</html>

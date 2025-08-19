@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <title>İSG - PDF Yönetim Paneli</title>
+  <style>
+    body {
+      background-color: #f7f9fc;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 20px;
+      color: #333;
+    }
+    h2 { color: #0077b6; }
+    .section {
+      margin-bottom: 40px;
+      padding: 20px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .button-group button {
+      background-color: #0077b6;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      margin: 5px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.3s;
+    }
+    .button-group button:hover {
+      background-color: #005f87;
+    }
+    .file-item {
+      margin: 5px 0;
+    }
+    input[type="text"], select {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    #progress {
+      margin-top: 20px;
+      font-weight: bold;
+      color: #ff8800;
+    }
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #0077b6;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-left: 10px;
+      vertical-align: middle;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    a.file-link {
+      text-decoration: none;
+      color: #0077b6;
+      font-weight: 500;
+      margin-left: 5px;
+    }
+    a.file-link:hover {
+      text-decoration: underline;
+    }
+    /* Pop-up Stil */
+    #companyMovePopup {
+      display: none; /* Varsayılan olarak gizli */
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+      z-index: 1000;
+      width: 400px;
+      max-width: 90%;
+      text-align: center;
+    }
+    #newCompanyForm {
+      display: none; /* Varsayılan olarak gizli */
+      margin-top: 15px;
+      border-top: 1px solid #eee;
+      padding-top: 15px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>🛡️ İş Sağlığı ve Güvenliği - PDF Yönetimi</h2>
+
+  <div class="section">
+    <h3>📁 EK-2 KLASÖRÜ: Dosya Seçimi ve PDF Oluşturma</h3>
+    <input type="text" id="filter1" placeholder="Filtrele..." onkeyup="filterFiles('list1', 'filter1')">
+    <div id="list1"></div>
+    <div class="button-group">
+      <button onclick="selectAll('list1', true)">Tümünü Seç</button>
+      <button onclick="selectAll('list1', false)">Tümünü Kaldır</button>
+      <button onclick="saveSelected('list1')">🖨️ Seçilenleri PDF Yap</button>
+      <button onclick="moveFilesEK2('list1', '1TVjW_R8SSZsQ3qNcyA6X6ghlJNyN0niJ', '1jj-zWABR1vAD3UE9WmLPUrpWTT4O4H8Y')">➡️ Seçilenleri Taşı</button>
+      <button onclick="deleteSelected('list1')">🗑️ Seçilenleri Sil</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>📁 SERTİFİKA KLASÖRÜ: Dosya Seçimi ve PDF Oluşturma</h3>
+    <input type="text" id="filter2" placeholder="Filtrele..." onkeyup="filterFiles('list2', 'filter2')">
+    <div id="list2"></div>
+    <div class="button-group">
+      <button onclick="selectAll('list2', true)">Tümünü Seç</button>
+      <button onclick="selectAll('list2', false)">Tümünü Kaldır</button>
+      <button onclick="saveSelected('list2')">🖨️ Seçilenleri PDF Yap</button>
+      <button onclick="deleteSelected('list2')">🗑️ Seçilenleri Sil</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>✉️ GMAİL PDF KLASÖRÜ: PDF'lerden Gmail Taslağı Oluştur</h3>
+    <input type="text" id="filter3" placeholder="Filtrele..." onkeyup="filterFiles('list3', 'filter3')">
+    <div id="list3"></div>
+    <div class="button-group">
+      <button onclick="selectAll('list3', true)">Tümünü Seç</button>
+      <button onclick="selectAll('list3', false)">Tümünü Kaldır</button>
+      <button onclick="createDraft()">✉️ Taslak Oluştur</button>
+      <button onclick="refreshList3()">🔄 Yenile</button>
+      <button onclick="deleteSelected('list3')">🗑️ Seçilenleri Sil</button>
+      <button onclick="openMoveToCompanyForm()">➡️ Firmaya Taşı</button>
+    </div>
+  </div>
+
+  <div id="progress"></div>
+
+  <div id="companyMovePopup">
+    </div>
+
+  <script>
+    const COMPANY_MAIN_FOLDER_ID = '1atPhjR7K8p6yqq1JoW3TveKzFqDHeU6A'; // Firma klasörlerinin ana klasörü
+    const EK2_FOLDER_ID = '1TVjW_R8SSZsQ3qNcyA6X6ghlJNyN0niJ';
+    const EK2_TARGET_FOLDER_ID = '1jj-zWABR1vAD3UE9WmLPUrpWTT4O4H8Y';
+    const SERTIFIKA_FOLDER_ID = '1yrwxxbb7WA2MxQ0UoZ5LN9jJahOaD5Uq';
+    const GMAIL_PDF_FOLDER_ID = '12TqiA2MttEhq9DRXGCOa8s7zWypVoy7O';
+
+
+    window.onload = function() {
+      loadFiles(GMAIL_PDF_FOLDER_ID, 'list3');
+      loadFiles(EK2_FOLDER_ID, 'list1');
+      loadFiles(SERTIFIKA_FOLDER_ID, 'list2');
+    };
+
+    function loadFiles(folderId, listId) {
+      const list = document.getElementById(listId);
+      list.innerHTML = `<div class="spinner"></div> Yükleniyor...`;
+
+      google.script.run.withSuccessHandler(function(files) {
+        list.innerHTML = '';
+        if (files.length === 0) {
+          list.innerHTML = '<p>Bu klasörde hiç dosya bulunamadı.</p>';
+          return;
+        }
+        files.forEach(file => {
+          const div = document.createElement('div');
+          div.className = 'file-item';
+          const link = `https://drive.google.com/open?id=${file.id}`;
+          div.innerHTML = `<label><input type="checkbox" value="${file.id}"><a href="${link}" class="file-link" target="_blank">${file.name}</a></label>`;
+          list.appendChild(div);
+        });
+      }).getDriveFiles(folderId);
+    }
+
+    function selectAll(listId, select) {
+      const checkboxes = document.querySelectorAll(`#${listId} input[type="checkbox"]`);
+      checkboxes.forEach(cb => cb.checked = select);
+    }
+
+    function filterFiles(listId, filterId) {
+      const filter = document.getElementById(filterId).value.toLowerCase();
+      const items = document.querySelectorAll(`#${listId} .file-item`);
+      items.forEach(item => {
+        const text = item.textContent.toLowerCase();
+        item.style.display = text.includes(filter) ? '' : 'none';
+      });
+    }
+
+    function saveSelected(listId) {
+      const selected = Array.from(document.getElementById(listId).querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+      if (selected.length > 0) {
+        document.getElementById('progress').innerHTML = `<div class="spinner"></div> Dosyalar PDF olarak kaydediliyor...`;
+        google.script.run.withSuccessHandler(function(message) {
+          document.getElementById('progress').innerText = message;
+          loadFiles(GMAIL_PDF_FOLDER_ID, 'list3'); // PDF'ler buraya kaydediliyor
+        }).saveAsPdf(selected);
+      } else {
+        alert('Lütfen kaydetmek için en least bir dosya seçin.');
+      }
+    }
+
+    function moveFilesEK2(listId, sourceFolderId, targetFolderId) {
+      const selected = Array.from(document.getElementById(listId).querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+      if (selected.length > 0) {
+        document.getElementById('progress').innerHTML = `<div class="spinner"></div> Dosyalar taşınıyor...`;
+        google.script.run.withSuccessHandler(function(message) {
+          document.getElementById('progress').innerText = message;
+          loadFiles(sourceFolderId, listId); // Kaynak klasörün listesini yenile
+        }).moveDriveFiles(selected, sourceFolderId, targetFolderId);
+      } else {
+        alert('Lütfen taşımak için en az bir dosya seçin.');
+      }
+    }
+
+    function createDraft() {
+      const selected = Array.from(document.getElementById('list3').querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+      if (selected.length > 0) {
+        document.getElementById('progress').innerHTML = `<div class="spinner"></div> Gmail taslağı hazırlanıyor...`;
+        google.script.run.withSuccessHandler(function(message) {
+          document.getElementById('progress').innerHTML = `
+            ${message}
+            <br><br>
+            <a href="https://mail.google.com/mail/u/0/?tab=rm&ogbl#drafts" target="_blank"
+              style="display: inline-block; margin-top: 10px; padding: 10px 15px; background-color: #0077b6; color: white; border-radius: 5px; text-decoration: none;">
+              📬 Taslaklara Git
+            </a>
+          `;
+        }).createGmailDraft(selected);
+      } else {
+        alert('Lütfen en az bir PDF seçin.');
+      }
+    }
+
+    function deleteSelected(listId) {
+      const selected = Array.from(document.getElementById(listId).querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+      if (selected.length > 0) {
+        if (confirm('Seçilen dosyaları silmek istediğinize emin misiniz? Bu işlem geri alınamaz.')) {
+          document.getElementById('progress').innerHTML = `<div class="spinner"></div> Dosyalar siliniyor...`;
+          google.script.run.withSuccessHandler(function(message) {
+            document.getElementById('progress').innerText = message;
+            refreshAllLists();
+          }).deleteFiles(selected);
+        }
+      } else {
+        alert('Lütfen silmek için en az bir dosya seçin.');
+      }
+    }
+
+    function refreshList3() {
+      loadFiles(GMAIL_PDF_FOLDER_ID, 'list3');
+    }
+
+    function refreshAllLists() {
+      loadFiles(EK2_FOLDER_ID, 'list1');
+      loadFiles(SERTIFIKA_FOLDER_ID, 'list2');
+      loadFiles(GMAIL_PDF_FOLDER_ID, 'list3');
+    }
+
+let allCompanyFolders = []; // Firma listesini saklayacak global değişken
+
+    function openMoveToCompanyForm() {
+      const selectedFiles = Array.from(document.getElementById('list3').querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+      if (selectedFiles.length === 0) {
+        alert('Lütfen taşımak için en az bir PDF seçin.');
+        return;
+      }
+
+      document.getElementById('progress').innerHTML = `<div class="spinner"></div> Firma klasörleri yükleniyor...`;
+
+      google.script.run.withSuccessHandler(function(companyFolders) {
+        allCompanyFolders = companyFolders; // Global değişkene ata
+        renderCompanySelectionForm(); // Formu çiz
+
+        document.getElementById('companyMovePopup').style.display = 'block';
+        document.getElementById('progress').innerText = ''; // Ana ilerleme mesajını temizle
+
+        // Otomatik filtreleme özelliğini ekle
+        // Seçilen dosyalardan ilkini alıp adının ilk 13 karakterini filtreleme alanına yaz
+        if (selectedFiles.length > 0) {
+            google.script.run.withSuccessHandler(function(fileInfo) {
+                if (fileInfo && fileInfo.name) {
+                    const fileNamePrefix = fileInfo.name.substring(0, Math.min(13, fileInfo.name.length));
+                    const filterInput = document.getElementById('companyFilter');
+                    if (filterInput) { // Eğer filtreleme input'u varsa
+                        filterInput.value = fileNamePrefix;
+                        filterCompanyList(); // Filtreleme işlemini tetikle
+                    }
+                }
+            }).getFileInfo(selectedFiles[0]); // Sadece ilk seçilen dosyanın bilgisini iste
+        }
+
+      }).getCompanyFolders(COMPANY_MAIN_FOLDER_ID);
+    }
+
+    function renderCompanySelectionForm() {
+        let formHtml = `
+            <h3>Firmaya Taşı: Hedef Klasörü Seçin</h3>
+            <input type="text" id="companyFilter" placeholder="Firma Adına Göre Filtrele..." onkeyup="filterCompanyList()">
+            <select id="companyFolderSelect" size="10" style="width: 100%; height: 200px; padding: 8px; margin-bottom: 10px; border-radius: 5px; border: 1px solid #ccc;">
+            </select>
+            <div class="button-group">
+              <button onclick="executeSmartMove()">Taşımayı Başlat</button>
+              <button onclick="toggleNewCompanyForm()">➕ Yeni Firma Klasörü Oluştur</button>
+              <button onclick="closeMoveForm()">İptal</button>
+            </div>
+            
+            <div id="newCompanyForm">
+                <h4>Yeni Firma Oluştur</h4>
+                <input type="text" id="newCompanyName" placeholder="Yeni Firma Adı...">
+                <button onclick="createNewCompanyFolder()">Oluştur ve Seç</button>
+            </div>
+            <div id="moveFormProgress" style="margin-top: 10px; font-weight: bold; color: #ff8800;"></div>
+        `;
+        let popupDiv = document.getElementById('companyMovePopup');
+        popupDiv.innerHTML = formHtml;
+        populateCompanySelect(allCompanyFolders); // Tüm klasörleri yükle
+    }
+
+    function populateCompanySelect(folders) {
+      const selectElement = document.getElementById('companyFolderSelect');
+      selectElement.innerHTML = ''; // Mevcut seçenekleri temizle
+      if (folders.length === 0) {
+        selectElement.innerHTML = '<option value="">Hiç firma bulunamadı.</option>';
+        return;
+      }
+      folders.forEach(folder => {
+        const option = document.createElement('option');
+        option.value = folder.id;
+        option.innerText = folder.name;
+        selectElement.appendChild(option);
+      });
+    }
+
+    function filterCompanyList() {
+      const filterText = document.getElementById('companyFilter').value.toLowerCase();
+      const filteredFolders = allCompanyFolders.filter(folder => 
+        folder.name.toLowerCase().includes(filterText)
+      );
+      populateCompanySelect(filteredFolders);
+    }
+
+    function toggleNewCompanyForm() {
+      const form = document.getElementById('newCompanyForm');
+      form.style.display = form.style.display === 'none' ? 'block' : 'none';
+      document.getElementById('newCompanyName').value = ''; // Alanı temizle
+    }
+
+    function createNewCompanyFolder() {
+      const newFolderName = document.getElementById('newCompanyName').value.trim();
+      if (!newFolderName) {
+        alert('Lütfen yeni firma adı girin.');
+        return;
+      }
+      
+      document.getElementById('moveFormProgress').innerHTML = `<div class="spinner"></div> Yeni firma klasörü oluşturuluyor...`;
+
+      google.script.run.withSuccessHandler(function(newFolder) {
+        if (newFolder && newFolder.id) {
+          document.getElementById('moveFormProgress').innerText = `"${newFolder.name}" klasörü oluşturuldu.`;
+          // Yeni klasörü listeye ekle ve seçili hale getir
+          allCompanyFolders.push(newFolder);
+          allCompanyFolders.sort((a, b) => a.name.localeCompare(b.name)); // Sırala
+          populateCompanySelect(allCompanyFolders);
+          document.getElementById('companyFolderSelect').value = newFolder.id; // Yeni oluşturulanı seç
+          toggleNewCompanyForm(); // Yeni firma formunu kapat
+        } else {
+          document.getElementById('moveFormProgress').innerText = `Yeni firma klasörü oluşturulamadı.`;
+        }
+      }).createCompanyFolder(newFolderName, COMPANY_MAIN_FOLDER_ID);
+    }
+
+
+    function closeMoveForm() {
+      document.getElementById('companyMovePopup').style.display = 'none';
+      document.getElementById('moveFormProgress').innerText = ''; // İlerleme mesajını temizle
+    }
+
+    function executeSmartMove() {
+      const selectedCompanyFolderId = document.getElementById('companyFolderSelect').value;
+      if (!selectedCompanyFolderId) {
+        alert('Lütfen bir firma klasörü seçin veya yeni bir tane oluşturun.');
+        return;
+      }
+
+      const selectedFileIds = Array.from(document.getElementById('list3').querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+
+      document.getElementById('moveFormProgress').innerHTML = `<div class="spinner"></div> Dosyalar taşınıyor ve alt klasörler oluşturuluyor...`;
+
+      google.script.run.withSuccessHandler(function(response) { // Yanıt artık obje olacak
+        document.getElementById('moveFormProgress').innerText = response.message;
+        if (response.targetFolderId) {
+          const folderLink = `https://drive.google.com/drive/folders/${response.targetFolderId}`;
+          document.getElementById('moveFormProgress').innerHTML += `<br><br><a href="${folderLink}" target="_blank" style="color: #0077b6; text-decoration: underline;">📂 Klasöre gitmek için tıklayın</a>`;
+        }
+        refreshList3(); // Gmail PDF listesini yenile
+        // closeMoveForm(); // İşlem bitince formu kapatmayı düşünebilirsiniz, ancak kullanıcı mesajı görsün diye şimdilik kapalı
+      }).smartMoveFiles(selectedFileIds, selectedCompanyFolderId, GMAIL_PDF_FOLDER_ID);
+    }
+  </script>
+
+</body>
+</html>

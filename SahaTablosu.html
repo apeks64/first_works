@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body { font-family: Arial, sans-serif; padding: 10px; }
+    table { border-collapse: collapse; width: 100%; font-size: 12px; }
+    th, td { border: 1px solid #ccc; padding: 4px; text-align: left; vertical-align: top; }
+    th { background-color: #f0f0f0; }
+    .controls { margin-bottom: 10px; }
+    .multiselect { position: relative; display: inline-block; }
+    .selectBox { cursor: pointer; border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9; width: 300px; }
+    .overSelect { position: absolute; left: 0; right: 0; top: 0; bottom: 0; }
+    #uzmanCheckboxes, #bolgeCheckboxes {
+      display: none;
+      border: 1px #dadada solid;
+      position: absolute;
+      background-color: white;
+      z-index: 1;
+      max-height: 200px;
+      overflow-y: auto;
+      width: 300px;
+    }
+    #uzmanCheckboxes label, #bolgeCheckboxes label { display: block; padding: 3px; }
+    #uzmanCheckboxes label:hover, #bolgeCheckboxes label:hover { background-color: #1e90ff; color: white; }
+    
+    .selection-display {
+        font-size: 12px; /* Yazı boyutu büyütüldü */
+        color: #555;
+        margin-top: 5px;
+    }
+    
+    button {
+        padding: 8px 12px; /* Buton dolgu ve boyutu artırıldı */
+        font-size: 14px; /* Buton yazı boyutu artırıldı */
+        cursor: pointer;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        margin-top: 10px;
+    }
+    button:hover {
+        background-color: #45a049;
+    }
+
+    /* Yazdırma işlemi için */
+    @media print {
+      .controls, button {
+        display: none;
+      }
+    }
+
+    /* Veri satırları için tek satır stili */
+    td {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 150px;
+    }
+    
+    /* Firma sütunu için genişlik ayarı */
+    th:nth-child(1), td:nth-child(1) {
+      width: 25%;
+    }
+  </style>
+</head>
+<body>
+  <h3>FLIST Tablosu</h3>
+  <div class="controls">
+    <div style="display: flex; gap: 10px; flex-direction: column;">
+      <div style="display: flex; gap: 10px;">
+        <div class="multiselect" id="uzmanSelectDiv">
+          <div class="selectBox" onclick="showCheckboxes('uzman')">
+            <select style="display: none;"></select>
+            <span id="uzmanLabel">Uzman Seç</span>
+            <div class="overSelect"></div>
+          </div>
+          <div id="uzmanCheckboxes"></div>
+        </div>
+
+        <div class="multiselect" id="bolgeSelectDiv">
+          <div class="selectBox" onclick="showCheckboxes('bolge')">
+            <select style="display: none;"></select>
+            <span id="bolgeLabel">Bölge Seç</span>
+            <div class="overSelect"></div>
+          </div>
+          <div id="bolgeCheckboxes"></div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 10px;">
+          <div class="selection-display" id="uzmanSelectionDisplay"></div>
+          <div class="selection-display" id="bolgeSelectionDisplay"></div>
+      </div>
+    </div>
+    <button onclick="loadTable()">Tabloyu Göster</button>
+    <button onclick="window.print()">Yazdır</button>
+    <button onclick="exportToGoogleDocs()">Google Docs'a Aktar</button>
+  </div>
+
+  <table id="dataTable">
+    <thead>
+      <tr>
+        <th>Firma (A)</th>
+        <th>G</th>
+        <th>O</th>
+        <th>S</th>
+        <th>O (Benzersiz)</th>
+        <th>S (Benzersiz)</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    let expandedUzman = false;
+    let expandedBolge = false;
+
+    document.addEventListener("DOMContentLoaded", () => {
+      google.script.run.withSuccessHandler(populateUzmanList).getUniqueEValues();
+      google.script.run.withSuccessHandler(populateBolgeList).getUniqueFValues();
+    });
+    
+    document.addEventListener('click', function(event) {
+      const uzmanDiv = document.getElementById('uzmanSelectDiv');
+      const bolgeDiv = document.getElementById('bolgeSelectDiv');
+      
+      if (expandedUzman && !uzmanDiv.contains(event.target)) {
+        document.getElementById('uzmanCheckboxes').style.display = 'none';
+        expandedUzman = false;
+      }
+      if (expandedBolge && !bolgeDiv.contains(event.target)) {
+        document.getElementById('bolgeCheckboxes').style.display = 'none';
+        expandedBolge = false;
+      }
+    });
+
+    function showCheckboxes(type) {
+      const checkboxes = document.getElementById(type + "Checkboxes");
+      if (type === 'uzman') {
+        expandedUzman = !expandedUzman;
+        checkboxes.style.display = expandedUzman ? "block" : "none";
+        if(expandedBolge) {
+          document.getElementById('bolgeCheckboxes').style.display = 'none';
+          expandedBolge = false;
+        }
+      } else {
+        expandedBolge = !expandedBolge;
+        checkboxes.style.display = expandedBolge ? "block" : "none";
+        if(expandedUzman) {
+          document.getElementById('uzmanCheckboxes').style.display = 'none';
+          expandedUzman = false;
+        }
+      }
+    }
+
+    function populateUzmanList(list) {
+      const checkboxes = document.getElementById("uzmanCheckboxes");
+      list.forEach(v => {
+        const label = document.createElement("label");
+        label.innerHTML = `<input type="checkbox" value="${v}" onchange="updateLabel('uzman')" />${v}`;
+        checkboxes.appendChild(label);
+      });
+    }
+
+    function populateBolgeList(list) {
+      const checkboxes = document.getElementById("bolgeCheckboxes");
+      list.forEach(v => {
+        const label = document.createElement("label");
+        label.innerHTML = `<input type="checkbox" value="${v}" onchange="updateLabel('bolge')" />${v}`;
+        checkboxes.appendChild(label);
+      });
+    }
+
+    function updateLabel(type) {
+      const selected = Array.from(document.querySelectorAll(`#${type}Checkboxes input:checked`)).map(o => o.value);
+      const label = document.getElementById(type + "Label");
+      const display = document.getElementById(type + "SelectionDisplay");
+      
+      if (selected.length > 0) {
+        label.textContent = `${selected.length} Seçili`;
+        display.textContent = "Seçilenler: " + selected.join(", ");
+      } else {
+        label.textContent = type === 'uzman' ? 'Uzman Seç' : 'Bölge Seç';
+        display.textContent = "";
+      }
+    }
+
+    function loadTable() {
+      const uzmanlar = Array.from(document.querySelectorAll("#uzmanCheckboxes input:checked")).map(o => o.value);
+      const bolgeler = Array.from(document.querySelectorAll("#bolgeCheckboxes input:checked")).map(o => o.value);
+      google.script.run.withSuccessHandler(renderTable).getTableData(uzmanlar, bolgeler);
+    }
+
+    function renderTable(data) {
+      const tbody = document.getElementById("dataTable").querySelector("tbody");
+      tbody.innerHTML = "";
+      data.forEach(row => {
+        let tr = document.createElement("tr");
+        const firmaAdı = row[0] ? (row[0].length > 21 ? row[0].substring(0, 21) + "..." : row[0]) : "";
+        
+        let tdFirma = document.createElement("td");
+        tdFirma.textContent = firmaAdı;
+        tr.appendChild(tdFirma);
+
+        for (let i = 1; i < row.length; i++) {
+            let td = document.createElement("td");
+            td.textContent = row[i] || "";
+            tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
+      });
+    }
+
+    function exportToGoogleDocs() {
+      const uzmanlar = Array.from(document.querySelectorAll("#uzmanCheckboxes input:checked")).map(o => o.value);
+      const bolgeler = Array.from(document.querySelectorAll("#bolgeCheckboxes input:checked")).map(o => o.value);
+      
+      google.script.run.withSuccessHandler(openDocUrl).exportToDocs(uzmanlar, bolgeler);
+    }
+
+    function openDocUrl(url) {
+      if (url) {
+        window.open(url, '_blank');
+      } else {
+        alert("Belge oluşturulamadı.");
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      #filterInput, #filterInput2 {
+        width: 100%;
+        margin-bottom: 10px;
+      }
+      #dataList, #dataList2 {
+        max-height: 350px;
+        overflow-y: auto;
+      }
+      .selectItem {
+        margin: 5px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h3>EK-2 BİLGİLER Sayfasından Firmayı Seçiniz</h3>
+    <input type="text" id="filterInput" placeholder="Filtrele...">
+    <button onclick="selectAll('dataList')">Tümünü Seç</button>
+    <button onclick="selectFiltered('dataList')">Filtreleneni Seç</button>
+    <button onclick="deselectAll('dataList')">Tümünü Kaldır</button>
+    <br><br>
+    <div id="dataList">
+      <!-- EK-2 BİLGİLER sayfasından veri listesi burada görünecek -->
+    </div>
+
+    <h3>ATAMALAR Sayfasından Firmayı Seçiniz</h3>
+    <input type="text" id="filterInput2" placeholder="Filtrele...">
+    <button onclick="selectAll('dataList2')">Tümünü Seç</button>
+    <button onclick="selectFiltered('dataList2')">Filtreleneni Seç</button>
+    <button onclick="deselectAll('dataList2')">Tümünü Kaldır</button>
+    <br><br>
+    <div id="dataList2">
+      <!-- ATAMALAR sayfasından veri listesi burada görünecek -->
+    </div>
+    
+    <button onclick="submitSelection()">Seçimi Aktar</button>
+
+    <script>
+      var uniqueValues = []; // EK-2 BİLGİLER sayfasından gelen benzersiz veriler
+      var uniqueAtamalarValues = []; // ATAMALAR sayfasından gelen benzersiz veriler
+      let userEditedFilterInput2 = false; // ATAMALAR filtresi elle mi değiştirildi?
+
+      function filterData(inputId, dataListId, itemsClass) {
+        var input = document.getElementById(inputId).value.toLowerCase();
+        var items = document.querySelectorAll(`#${dataListId} .${itemsClass}`);
+        
+        items.forEach(function(item) {
+          var text = item.innerText.toLowerCase();
+          if (text.includes(input)) {
+            item.style.display = "block";
+          } else {
+            item.style.display = "none";
+          }
+        });
+      }
+
+      function selectAll(dataListId) {
+        var items = document.querySelectorAll(`#${dataListId} .selectItem`);
+        items.forEach(function(item) {
+          item.querySelector("input").checked = true;
+        });
+      }
+
+      function selectFiltered(dataListId) {
+        var items = document.querySelectorAll(`#${dataListId} .selectItem`);
+        items.forEach(function(item) {
+          if (item.style.display !== "none") {
+            item.querySelector("input").checked = true;
+          }
+        });
+      }
+
+      function deselectAll(dataListId) {
+        var items = document.querySelectorAll(`#${dataListId} .selectItem`);
+        items.forEach(function(item) {
+          item.querySelector("input").checked = false;
+        });
+      }
+
+      function submitSelection() {
+        var selectedValues = [];
+        var items = document.querySelectorAll(".selectItem input:checked");
+        items.forEach(function(item) {
+          selectedValues.push(item.value);
+        });
+
+        google.script.run.transferDataToPersonel(selectedValues, uniqueAtamalarValues);
+        google.script.host.close();
+      }
+
+      window.onload = function() {
+        var dataList = document.getElementById("dataList");
+        uniqueValues.forEach(function(value) {
+          var div = document.createElement("div");
+          div.classList.add("selectItem");
+          div.innerHTML = `<input type="checkbox" value="${value}"> ${value}`;
+          dataList.appendChild(div);
+        });
+
+        var dataList2 = document.getElementById("dataList2");
+        uniqueAtamalarValues.forEach(function(value) {
+          var div = document.createElement("div");
+          div.classList.add("selectItem");
+          div.innerHTML = `<input type="checkbox" value="${value}"> ${value}`;
+          dataList2.appendChild(div);
+        });
+
+        document.getElementById("filterInput").addEventListener("input", function() {
+          filterData("filterInput", "dataList", "selectItem");
+
+          if (!userEditedFilterInput2) {
+            const value = this.value;
+            const filterInput2 = document.getElementById("filterInput2");
+            filterInput2.value = value;
+            filterData("filterInput2", "dataList2", "selectItem");
+          }
+        });
+
+        document.getElementById("filterInput2").addEventListener("input", function() {
+          userEditedFilterInput2 = true;
+          filterData("filterInput2", "dataList2", "selectItem");
+        });
+      };
+    </script>
+  </body>
+</html>

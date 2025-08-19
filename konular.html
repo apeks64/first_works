@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        font-size: 8pt;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 25px;
+        font-family: Arial, sans-serif;
+        font-size: 8pt;
+      }
+      th {
+        background-color: #d9e1f2;
+        text-align: center;
+        padding: 2px 4px;
+        border: 1px solid #333;
+        vertical-align: middle;
+        height: 20px;
+      }
+      td {
+        border: 1px solid #333;
+        padding: 2px 4px;
+        vertical-align: top;
+        height: 100%;
+      }
+      ul {
+        columns: 2;
+        -webkit-columns: 2;
+        -moz-columns: 2;
+        margin: 0;
+        padding-left: 15px;
+        list-style-position: inside;
+      }
+      li {
+        margin: 0;
+        padding: 0;
+      }
+      .checkbox-container {
+        margin-bottom: 20px;
+        font-size: 10pt;
+      }
+      button {
+        margin-right: 10px;
+        font-size: 10pt;
+        padding: 4px 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <h2 style="font-size: 10pt;">Eğitim Konularını Seç</h2>
+    <div class="checkbox-container" id="checkboxes"></div>
+    <button onclick="olusturPano()">Panoyu Göster</button>
+    <button onclick="kopyalaPanoyu()">Panoyu Kopyala</button>
+    <hr>
+    <div id="panoAlani"></div>
+
+    <script>
+      let egitimVerileri = {};
+      let konuSirasi = [];
+
+      function olusturCheckBoxlar(veriler, siraliKonuListesi) {
+        const container = document.getElementById("checkboxes");
+        container.innerHTML = "";
+        siraliKonuListesi.forEach(konu => {
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.value = konu;
+          checkbox.id = konu;
+
+          const label = document.createElement("label");
+          label.htmlFor = konu;
+          label.textContent = " " + konu;
+
+          const div = document.createElement("div");
+          div.appendChild(checkbox);
+          div.appendChild(label);
+
+          container.appendChild(div);
+        });
+      }
+
+      function olusturPano() {
+        const pano = document.getElementById("panoAlani");
+        pano.innerHTML = "";
+
+        const secilenler = konuSirasi.filter(konu => {
+          return document.getElementById(konu)?.checked;
+        });
+
+        if (secilenler.length === 0) {
+          pano.innerHTML = "<p>Hiçbir konu seçilmedi.</p>";
+          return;
+        }
+
+        const disDiv = document.createElement("div");
+        disDiv.style.paddingLeft = "1cm";
+        disDiv.style.paddingRight = "1cm";
+        disDiv.style.maxWidth = "18cm";
+        disDiv.style.margin = "0 auto";
+
+        secilenler.forEach(konu => {
+          const konuBaslik = document.createElement("table");
+          konuBaslik.style.width = "100%";
+          konuBaslik.style.borderCollapse = "collapse";
+          konuBaslik.innerHTML = `
+            <tr>
+              <td colspan="2" style="
+                background-color: #d9e1f2;
+                border: 1px solid #333;
+                font-family: Arial, sans-serif;
+                font-size: 8pt;
+                text-align: left;
+                padding: 2px 4px;
+                line-height: 1;
+              ">
+                <strong>${konu}</strong>
+              </td>
+            </tr>
+          `;
+
+          const dataTable = document.createElement("table");
+          dataTable.style.width = "100%";
+          dataTable.style.borderCollapse = "collapse";
+
+          const detaylar = egitimVerileri[konu];
+          const ortanca = Math.ceil(detaylar.length / 2);
+          const sol = detaylar.slice(0, ortanca);
+          const sag = detaylar.slice(ortanca);
+
+          const satir = document.createElement("tr");
+          [sol, sag].forEach(kisim => {
+            const td = document.createElement("td");
+            td.style.verticalAlign = "top";
+            td.style.border = "1px solid #333";
+            td.style.fontFamily = "Arial, sans-serif";
+            td.style.fontSize = "8pt";
+            td.style.padding = "2px 4px";
+
+            const ul = document.createElement("ul");
+            ul.style.margin = "0";
+            ul.style.paddingLeft = "15px";
+            ul.style.listStylePosition = "inside";
+
+            kisim.forEach(item => {
+              const li = document.createElement("li");
+              li.textContent = item;
+              ul.appendChild(li);
+            });
+
+            td.appendChild(ul);
+            satir.appendChild(td);
+          });
+
+          dataTable.appendChild(satir);
+          disDiv.appendChild(konuBaslik);
+          disDiv.appendChild(dataTable);
+        });
+
+        pano.appendChild(disDiv);
+      }
+
+      function kopyalaPanoyu() {
+        const pano = document.getElementById("panoAlani");
+        const range = document.createRange();
+        range.selectNode(pano);
+        window.getSelection().removeAllRanges();
+        window.getSelection().addRange(range);
+        try {
+          document.execCommand("copy");
+          alert("Pano başarıyla kopyalandı!");
+        } catch (err) {
+          alert("Kopyalama başarısız oldu.");
+        }
+        window.getSelection().removeAllRanges();
+      }
+
+      google.script.run.withSuccessHandler(veri => {
+        egitimVerileri = veri.veriler;
+        konuSirasi = veri.konuSirasi;
+        olusturCheckBoxlar(egitimVerileri, konuSirasi);
+      }).getEgitimVerileriSirali();
+    </script>
+  </body>
+</html>

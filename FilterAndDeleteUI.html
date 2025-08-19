@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    #filterInput {
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 5px;
+    }
+    #dataList {
+      max-height: 200px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      padding: 5px;
+    }
+    .selectItem {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h3>Veri Seçimi</h3>
+  <input type="text" id="filterInput" placeholder="Filtrele..." oninput="filterData()">
+  <button onclick="selectAll()">Tümünü Seç</button>
+  <button onclick="selectFiltered()">Filtreleneni Seç</button>
+  <button onclick="deselectAll()">Tümünü Kaldır</button>
+  <br><br>
+  <div id="dataList"></div>
+  <button onclick="submitSelection()">Seçili Olanları Sil</button>
+
+  <script>
+    let allFirms = [];
+
+    function filterData() {
+      let input = document.getElementById("filterInput").value.toLowerCase();
+      let dataList = document.getElementById("dataList");
+      dataList.innerHTML = ""; 
+
+      allFirms
+        .filter(firm => firm.toLowerCase().includes(input)) // Yalnızca eşleşenleri göster
+        .forEach(firm => {
+          let div = document.createElement("div");
+          div.classList.add("selectItem");
+          div.innerHTML = `<input type="checkbox" value="${firm}"> ${firm}`;
+          dataList.appendChild(div);
+        });
+    }
+
+    function selectAll() {
+      document.querySelectorAll("#dataList input").forEach(el => el.checked = true);
+    }
+
+    function selectFiltered() {
+      document.querySelectorAll("#dataList .selectItem").forEach(item => {
+        if (item.style.display !== "none") {
+          item.querySelector("input").checked = true;
+        }
+      });
+    }
+
+    function deselectAll() {
+      document.querySelectorAll("#dataList input").forEach(el => el.checked = false);
+    }
+
+    function submitSelection() {
+      let selectedValues = Array.from(document.querySelectorAll("#dataList input:checked"))
+        .map(input => input.value);
+      google.script.run.deleteSelectedFirms(selectedValues);
+      google.script.host.close();
+    }
+
+    google.script.run.withSuccessHandler(function(firms) {
+      allFirms = firms; 
+      filterData(); // Listeyi başta yükle
+    }).getUniqueFirmalar();
+  </script>
+</body>
+</html>

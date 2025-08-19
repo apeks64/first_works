@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <base target="_top">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 15px;
+            margin: 0;
+            background-color: #f8f8f8;
+            color: #333;
+        }
+        h3 {
+            color: #0056b3;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        h4 {
+            color: #007bff;
+            margin-top: 25px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="text"], input[type="date"], input[type="number"], select {
+            width: calc(100% - 22px); /* Padding ve border için */
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap; /* Küçük ekranlarda alt alta gelmesi için */
+        }
+        .input-group label {
+            flex: 0 0 auto; /* Label'ların esnekliğini ayarla */
+            align-self: center; /* Dikeyde ortala */
+        }
+        .input-group input {
+            flex: 1; /* Input'ların esnekliğini ayarla */
+            width: auto; 
+            margin-bottom: 0;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+            margin-top: 10px;
+            transition: background-color 0.2s ease;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        /* Checkbox konteynerları */
+        .checkbox-container {
+            border: 1px solid #ddd;
+            padding: 10px;
+            max-height: 200px; 
+            overflow-y: auto; /* Dikey kaydırma çubuğu */
+            margin-bottom: 10px;
+            background-color: #fff;
+            border-radius: 4px;
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+            padding: 3px 0;
+        }
+        .checkbox-item input[type="checkbox"] {
+            width: auto;
+            margin: 0 8px 0 0;
+            position: relative;
+            top: -1px;
+            flex-shrink: 0; /* Küçülmesini engelle */
+        }
+        .checkbox-item label {
+            font-weight: normal;
+            margin-bottom: 0;
+            cursor: pointer;
+            flex-grow: 1; /* Metnin kalan alanı kaplamasını sağla */
+            color: #333;
+            font-size: 13px;
+        }
+        
+        .action-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            gap: 10px; /* Butonlar arası boşluk */
+        }
+        .action-buttons button {
+            width: 48%; /* İki buton için yaklaşık yarı yarıya */
+            padding: 8px 12px;
+            font-size: 14px;
+            margin-top: 0;
+        }
+
+        #firmDetailsDisplay p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        #firmDetailsDisplay strong {
+            display: inline-block;
+            width: 150px; /* Bilgi etiketleri için sabit genişlik */
+        }
+
+        #generateDocButton {
+            background-color: #28a745;
+            margin-top: 15px;
+        }
+        #generateDocButton:hover {
+            background-color: #218838;
+        }
+        .status-message {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            text-align: center;
+            display: none; /* Varsayılan olarak gizli */
+        }
+        .status-message.info {
+            background-color: #e0f2f7;
+            border: 1px solid #007bff;
+            color: #0056b3;
+        }
+        .status-message.error {
+            background-color: #ffe6e6;
+            border: 1px solid #dc3545;
+            color: #c82333;
+        }
+        #notificationMessage {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #4CAF50; /* Yeşil */
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            white-space: nowrap; /* Metnin tek satırda kalmasını sağlar */
+            overflow: hidden; /* Taşmayı gizle */
+            text-overflow: ellipsis; /* Taşmayı üç nokta ile göster */
+            max-width: 90%; /* Çok uzun mesajları sınırlar */
+        }
+    </style>
+</head>
+<body>
+    <h3>Eğitim Katılımcı Listesi Oluştur</h3>
+
+    <label for="firmSelect">Firma Seç:</label>
+    <input type="text" id="firmFilterInput" oninput="filterFirmList()" placeholder="Firma adı yazarak filtrele..." autocomplete="off">
+    <select id="firmSelect" size="5" onchange="loadFirmDetails()">
+    </select>
+    <div id="firmDetailsDisplay">
+        <p><strong>Unvanı:</strong> <span id="displayUnvani"></span></p>
+        <p><strong>İş Yeri Hekimi:</strong> <span id="displayIsYeriHekimi"></span></p>
+        <p><strong>İH Belge No:</strong> <span id="displayIhBelgeNo"></span></p>
+        <p><strong>İş Güvenliği Uzmanı:</strong> <span id="displayIsGuzmani"></span></p>
+        <p><strong>İGU Belge No:</strong> <span id="displayIguBelgeNo"></span></p>
+        <p><strong>Adres:</strong> <span id="displayAdres"></span></p>
+    </div>
+    <hr>
+
+    <h4>Eğitim Tarihleri ve Saatleri:</h4>
+    <div class="input-group">
+        <label for="date1">Tarih 1:</label>
+        <input type="date" id="date1" onchange="updateDateTimeDisplay()">
+        <label for="hour1">Saat 1:</label>
+        <input type="number" id="hour1" min="0" oninput="updateDateTimeDisplay()">
+    </div>
+    <div class="input-group">
+        <label for="date2">Tarih 2:</label>
+        <input type="date" id="date2" onchange="updateDateTimeDisplay()">
+        <label for="hour2">Saat 2:</label>
+        <input type="number" id="hour2" min="0" oninput="updateDateTimeDisplay()">
+    </div>
+    <div class="input-group">
+        <label for="date3">Tarih 3:</label>
+        <input type="date" id="date3" onchange="updateDateTimeDisplay()">
+        <label for="hour3">Saat 3:</label>
+        <input type="number" id="hour3" min="0" oninput="updateDateTimeDisplay()">
+    </div>
+    <p><strong>Gösterim Formatı:</strong> <span id="dateTimeDisplay" style="font-weight: bold;"></span></p>
+    <hr>
+
+    <h4>Eğitim Konuları Seç (Sadece Başlıklar):</h4>
+    <div id="egitimKonulariCheckboxes" class="checkbox-container">
+        <p style="text-align: center; color: #777;">Eğitim konuları yükleniyor...</p>
+    </div>
+    <div class="action-buttons">
+        <button onclick="selectAllEgitimKonulari()">Tüm Konuları Seç</button>
+        <button onclick="clearAllEgitimKonulari()">Tüm Konuları Kaldır</button>
+    </div>
+    <hr>
+
+    <h4>Katılımcılar Listesi Oluştur:</h4>
+    <label for="personnelFilterInput">Personel Ara (İş Yeri, Adı, Soyadı, TC ile):</label>
+    <input type="text" id="personnelFilterInput" oninput="debouncePersonnelFilter()" placeholder="İş yeri adı, ad, soyad veya TC girin..." autocomplete="off">
+
+    <label>Eşleşen Personelleri Seç:</label>
+    <div id="personnelCheckboxes" class="checkbox-container">
+        <p style="text-align: center; color: #777;">Arama yapmak için yukarıdaki kutuya bir değer girin.</p>
+    </div>
+    <div class="action-buttons">
+        <button onclick="selectAllPersonnel()">Tümünü Seç</button>
+        <button onclick="clearAllPersonnel()">Tümünü Kaldır</button>
+    </div>
+    <div id="statusMessage" class="status-message info"></div>
+    <div id="notificationMessage"></div> 
+
+    <button onclick="generateFinalDocument()" id="generateDocButton">Belgeyi Oluştur</button>
+
+    <script>
+        function showNotification(message, isSuccess) {
+            const notificationDiv = document.getElementById('notificationMessage');
+            notificationDiv.innerHTML = message;
+            notificationDiv.style.backgroundColor = isSuccess ? '#4CAF50' : '#f44336'; 
+            notificationDiv.style.display = 'block';
+
+            setTimeout(() => {
+                notificationDiv.style.display = 'none';
+            }, 3000); // Bildirim 3 saniye kalsın
+        }
+
+        // Debounce fonksiyonu
+        function debounce(func, delay) {
+            let timeout;
+            return function(...args) {
+                const context = this;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), delay);
+            };
+        }
+
+        let allFirms = []; // Tüm firmaları saklamak için
+        document.addEventListener('DOMContentLoaded', (event) => {
+            loadFirmsList();
+            loadEgitimKonulariBasliklari();
+            setDefaultDates();
+        });
+
+        function loadFirmsList() {
+            google.script.run
+                .withSuccessHandler(function(firms) {
+                    allFirms = firms; 
+                    displayFirms(firms);
+                })
+                .withFailureHandler(function(error) {
+                    showNotification('Firma listesi yüklenirken hata: ' + error.message, false);
+                })
+                .getFirmsList();
+        }
+
+        function displayFirms(firmsToDisplay) {
+            const select = document.getElementById('firmSelect');
+            select.innerHTML = '';
+            if (firmsToDisplay.length === 0) {
+                const option = document.createElement('option');
+                option.textContent = 'Firma bulunamadı.';
+                select.appendChild(option);
+                return;
+            }
+            firmsToDisplay.forEach(firm => {
+                const option = document.createElement('option');
+                option.value = firm;
+                option.textContent = firm;
+                select.appendChild(option);
+            });
+            // İlk firmayı otomatik seç ve detaylarını yükle
+            if (firmsToDisplay.length > 0) { 
+                select.value = firmsToDisplay[0];
+                loadFirmDetails();
+            }
+        }
+
+        function filterFirmList() {
+            const filterValue = document.getElementById('firmFilterInput').value.toLowerCase();
+            const filteredFirms = allFirms.filter(firm => firm.toLowerCase().includes(filterValue));
+            displayFirms(filteredFirms);
+        }
+
+        function loadFirmDetails() {
+            const selectedFirm = document.getElementById('firmSelect').value;
+            if (selectedFirm) {
+                google.script.run
+                    .withSuccessHandler(function(details) {
+                        document.getElementById('displayUnvani').textContent = details.UNVANI || 'Yok';
+                        document.getElementById('displayIsYeriHekimi').textContent = details.ISYERIHEKIMI || 'Yok';
+                        document.getElementById('displayIhBelgeNo').textContent = details.IH_BELGE_NO || 'Yok';
+                        document.getElementById('displayIsGuzmani').textContent = details.ISGUZMANI || 'Yok';
+                        document.getElementById('displayIguBelgeNo').textContent = details.IGU_BELGE_NO || 'Yok';
+                        document.getElementById('displayAdres').textContent = details.ADRESI || 'Yok';
+
+                        // YENİ ÖZELLİK: Firma seçildiğinde "Personel Ara" alanını otomatik doldur
+                        const personnelFilterInput = document.getElementById('personnelFilterInput');
+                        // Sadece eğer personel arama alanı boşsa veya önceki firma adıyla doluysa otomatik doldur
+                        // Kullanıcı manuel olarak farklı bir şey yazdıysa dokunma
+                        if (personnelFilterInput.value === '' || allFirms.includes(personnelFilterInput.value)) {
+                            personnelFilterInput.value = details.UNVANI || '';
+                            debouncePersonnelFilter(); // Otomatik doldurulduğunda aramayı tetikle
+                        }
+                    })
+                    .withFailureHandler(function(error) {
+                        showNotification('Firma detayları yüklenirken hata: ' + error.message, false);
+                    })
+                    .getFirmDetails(selectedFirm);
+            } else {
+                // Firma seçimi kaldırıldığında detayları temizle
+                document.getElementById('displayUnvani').textContent = '';
+                document.getElementById('displayIsYeriHekimi').textContent = '';
+                document.getElementById('displayIhBelgeNo').textContent = '';
+                document.getElementById('displayIsGuzmani').textContent = '';
+                document.getElementById('displayIguBelgeNo').textContent = '';
+                document.getElementById('displayAdres').textContent = '';
+                document.getElementById('personnelFilterInput').value = ''; // Personel arama alanını da temizle
+                document.getElementById("personnelCheckboxes").innerHTML = "<p style='text-align: center; color: #777;'>Arama yapmak için yukarıdaki kutuya bir değer girin.</p>";
+            }
+        }
+
+        function setDefaultDates() {
+            const today = new Date();
+            const format = (date) => date.toISOString().split('T')[0];
+
+            document.getElementById('date3').value = format(today); 
+            
+            const yesterday = new Date(today);
+            yesterday.setDate(today.getDate() - 1);
+            document.getElementById('date2').value = format(yesterday); 
+
+            const dayBeforeYesterday = new Date(today);
+            dayBeforeYesterday.setDate(today.getDate() - 2);
+            document.getElementById('date1').value = format(dayBeforeYesterday); 
+
+            document.getElementById('hour1').value = 8;
+            document.getElementById('hour2').value = 0; 
+            document.getElementById('hour3').value = 0; 
+
+            updateDateTimeDisplay(); 
+        }
+
+        function formatDateForDisplay(dateInputId) {
+            const dateInput = document.getElementById(dateInputId);
+            if (dateInput.value) {
+                const date = new Date(dateInput.value + 'T00:00:00'); 
+                if (isNaN(date.getTime())) {
+                    console.warn(`Geçersiz tarih değeri: ${dateInput.value} için ${dateInputId}`);
+                    return null;
+                }
+                return {
+                    day: date.getDate().toString().padStart(2, '0'),
+                    month: (date.getMonth() + 1).toString().padStart(2, '0'),
+                    year: date.getFullYear().toString()
+                };
+            }
+            return null;
+        }
+
+        function updateDateTimeDisplay() {
+            const date1Obj = formatDateForDisplay('date1');
+            const date2Obj = formatDateForDisplay('date2');
+            const date3Obj = formatDateForDisplay('date3');
+
+            let dayParts = [];
+            let distinctMonthsAndYears = new Set();
+
+            const validDates = [date1Obj, date2Obj, date3Obj].filter(Boolean);
+
+            validDates.forEach(dateObj => {
+                dayParts.push(dateObj.day);
+                distinctMonthsAndYears.add(`${dateObj.month}/${dateObj.year}`);
+            });
+
+            let formattedDates = '';
+            if (validDates.length > 0) {
+                if (distinctMonthsAndYears.size === 1) {
+                    const monthAndYear = Array.from(distinctMonthsAndYears)[0];
+                    formattedDates = `${dayParts.join('-')}/${monthAndYear}`;
+                } else {
+                    const sortedDates = validDates.sort((a, b) => {
+                        const dateA = new Date(`${a.year}-${a.month}-${a.day}`);
+                        const dateB = new Date(`${b.year}-${b.month}-${b.day}`);
+                        return dateA - dateB;
+                    });
+                    formattedDates = sortedDates.map(d => `${d.day}/${d.month}/${d.year}`).join(' - ');
+                }
+            }
+
+            const hour1 = parseFloat(document.getElementById('hour1').value) || 0;
+            const hour2 = parseFloat(document.getElementById('hour2').value) || 0;
+            const hour3 = parseFloat(document.getElementById('hour3').value) || 0;
+
+            const totalHours = hour1 + hour2 + hour3;
+            let formattedHours = '';
+            if (totalHours > 0) {
+                formattedHours = `${totalHours} Saat`;
+            }
+            
+            document.getElementById('dateTimeDisplay').textContent = `${formattedDates} | ${formattedHours}`;
+        }
+
+        let allEgitimKonulariBasliklari = []; 
+
+        function loadEgitimKonulariBasliklari() {
+            const egitimKonulariDiv = document.getElementById("egitimKonulariCheckboxes");
+            egitimKonulariDiv.innerHTML = "<p style='text-align: center; color: #777;'>Eğitim konuları başlıkları yükleniyor...</p>";
+
+            google.script.run
+                .withSuccessHandler(function(basliklar) {
+                    allEgitimKonulariBasliklari = basliklar; 
+                    displayEgitimKonulariBasliklari(basliklar);
+                })
+                .withFailureHandler(function(error) {
+                    showNotification('Eğitim konuları başlıkları yüklenirken hata: ' + error.message, false);
+                    egitimKonulariDiv.innerHTML = "<p style='text-align: center; color: #777;'>Eğitim konuları başlıkları yüklenemedi.</p>";
+                })
+                .getEgitimKonulariBasliklari();
+        }
+
+        function displayEgitimKonulariBasliklari(basliklarToDisplay) {
+            const div = document.getElementById("egitimKonulariCheckboxes");
+            div.innerHTML = "";
+
+            if (!basliklarToDisplay || basliklarToDisplay.length === 0) {
+                div.innerHTML = "<p style='text-align: center; color: #777;'>Eğitim konusu başlığı bulunamadı.</p>";
+                return;
+            }
+
+            basliklarToDisplay.forEach((baslikObj, index) => {
+                const checkboxContainer = document.createElement("div");
+                checkboxContainer.className = "checkbox-item";
+                
+                const checkbox = document.createElement("input");
+                checkbox.type = "checkbox";
+                const safeBaslik = String(baslikObj.baslik || '').replace(/[^a-zA-Z0-9çÇğĞıİöÖşŞüÜ]/g, '_');
+                checkbox.id = `egitim_baslik_${index}_${safeBaslik}`;
+                checkbox.value = JSON.stringify(baslikObj); 
+
+                const label = document.createElement("label");
+                label.htmlFor = checkbox.id;
+                label.textContent = baslikObj.baslik;
+
+                checkboxContainer.appendChild(checkbox);
+                checkboxContainer.appendChild(label);
+                div.appendChild(checkboxContainer);
+            });
+        }
+
+        function selectAllEgitimKonulari() {
+            const checkboxes = document.querySelectorAll('#egitimKonulariCheckboxes input[type="checkbox"]');
+            checkboxes.forEach(cb => cb.checked = true);
+        }
+
+        function clearAllEgitimKonulari() {
+            const checkboxes = document.querySelectorAll('#egitimKonulariCheckboxes input[type="checkbox"]');
+            checkboxes.forEach(cb => cb.checked = false);
+        }
+
+        let personnelFilterTimeout; 
+        const personnelDebounceDelay = 300; 
+
+        function debouncePersonnelFilter() {
+            clearTimeout(personnelFilterTimeout);
+            personnelFilterTimeout = setTimeout(() => {
+                const filterValue = document.getElementById("personnelFilterInput").value;
+                loadFilteredPersonnel(filterValue);
+            }, personnelDebounceDelay);
+        }
+
+        function loadFilteredPersonnel(filterValue) {
+            const personnelDiv = document.getElementById("personnelCheckboxes");
+            const statusDiv = document.getElementById("statusMessage");
+
+            personnelDiv.innerHTML = "<p style='text-align: center; color: #777;'>Personeller aranıyor... Lütfen bekleyiniz.</p>";
+            statusDiv.style.display = "none";
+
+            google.script.run
+                .withSuccessHandler(function(personnel) {
+                    displayPersonnel(personnel);
+                    if (personnel.length === 0 && filterValue.length > 0) {
+                        statusDiv.className = "status-message info";
+                        statusDiv.textContent = `"${filterValue}" için hiçbir eşleşen personel bulunamadı.`;
+                        statusDiv.style.display = "block";
+                    } else {
+                        statusDiv.style.display = "none";
+                    }
+                })
+                .withFailureHandler(function(error) {
+                    personnelDiv.innerHTML = "<p style='text-align: center; color: #777;'>Personel yüklenirken bir hata oluştu.</p>";
+                    statusDiv.className = "status-message error";
+                    statusDiv.textContent = `Hata: ${error.message}`;
+                    statusDiv.style.display = "block";
+                })
+                .getFilteredPersonnelForEgitim(filterValue); 
+        }
+
+        function displayPersonnel(personnelToDisplay) {
+            const div = document.getElementById("personnelCheckboxes");
+            div.innerHTML = "";
+
+            if (!personnelToDisplay || personnelToDisplay.length === 0) {
+                div.innerHTML = "<p style='text-align: center; color: #777;'>Arama yapmak için yukarıdaki kutuya bir değer girin veya eşleşen personel bulunamadı.</p>";
+                return;
+            }
+
+            personnelToDisplay.forEach(p => {
+                const checkboxContainer = document.createElement("div");
+                checkboxContainer.className = "checkbox-item";
+                
+                const checkbox = document.createElement("input");
+                checkbox.type = "checkbox";
+                const safeTc = String(p.tc || '').replace(/[^a-zA-Z0-9çÇğĞıİöÖşŞüÜ]/g, '_');
+                const safeAd = String(p.ad || '').replace(/[^a-zA-Z0-9çÇğĞıİöÖşŞüÜ]/g, '_');
+                const safeSoyad = String(p.soyad || '').replace(/[^a-zA-Z0-9çÇğĞıİöÖşŞüÜ]/g, '_');
+                checkbox.id = `personel_${safeTc}_${safeAd}_${safeSoyad}`; 
+                
+                checkbox.value = JSON.stringify({
+                    tc: p.tc,
+                    ad: p.ad,
+                    soyad: p.soyad,
+                    is: p.is,
+                    firm: p.firm 
+                });
+
+                const label = document.createElement("label");
+                label.htmlFor = checkbox.id;
+                label.textContent = `${p.firm || ''} - ${p.ad || ''} ${p.soyad || ''} (TC: ${p.tc || ''})`; 
+
+                checkboxContainer.appendChild(checkbox);
+                checkboxContainer.appendChild(label);
+                div.appendChild(checkboxContainer);
+            });
+        }
+
+        function selectAllPersonnel() {
+            const checkboxes = document.querySelectorAll('#personnelCheckboxes input[type="checkbox"]');
+            checkboxes.forEach(cb => cb.checked = true);
+        }
+
+        function clearAllPersonnel() {
+            const checkboxes = document.querySelectorAll('#personnelCheckboxes input[type="checkbox"]');
+            checkboxes.forEach(cb => cb.checked = false);
+        }
+        
+        async function generateFinalDocument() {
+            const selectedFirm = document.getElementById('firmSelect').value;
+            if (!selectedFirm) {
+                showNotification('Lütfen bir firma seçiniz!', false);
+                return;
+            }
+
+            const firmDetails = {
+                UNVANI: document.getElementById('displayUnvani').textContent,
+                ISYERIHEKIMI: document.getElementById('displayIsYeriHekimi').textContent,
+                IH_BELGE_NO: document.getElementById('displayIhBelgeNo').textContent,
+                ISGUZMANI: document.getElementById('displayIsGuzmani').textContent,
+                IGU_BELGE_NO: document.getElementById('displayIguBelgeNo').textContent,
+                ADRESI: document.getElementById('displayAdres').textContent
+            };
+
+            const dateTimeDisplayContent = document.getElementById('dateTimeDisplay').textContent;
+            const parts = dateTimeDisplayContent.split(' | ');
+            const formattedDates = parts[0] || '';
+            const formattedHours = parts[1] || '';
+
+            const selectedEgitimBasliklari = Array.from(document.querySelectorAll('#egitimKonulariCheckboxes input[type="checkbox"]:checked'))
+                                                           .map(cb => {
+                                                                try {
+                                                                    return JSON.parse(cb.value);
+                                                                } catch (e) {
+                                                                    console.error("Checkbox değeri parse edilemedi:", cb.value, e);
+                                                                    return null; 
+                                                                }
+                                                           }).filter(Boolean); 
+            
+            if (selectedEgitimBasliklari.length === 0) {
+                showNotification('Lütfen en az bir eğitim konusu başlığı seçiniz!', false);
+                document.getElementById('generateDocButton').disabled = false; 
+                return;
+            }
+
+            showNotification('Seçilen eğitim konuları detayları alınıyor...', true);
+            document.getElementById('generateDocButton').disabled = true; 
+
+            const altKonuPromises = selectedEgitimBasliklari.map(baslikObj => {
+                return new Promise((resolve, reject) => {
+                    if (typeof baslikObj.colIndex !== 'number') {
+                        console.error("Geçersiz colIndex:", baslikObj);
+                        reject(`Eğitim konusu "${baslikObj.baslik || 'Bilinmiyor'}" için geçersiz sütun indeksi.`);
+                        return;
+                    }
+                    google.script.run
+                        .withSuccessHandler(altKonular => {
+                            resolve({
+                                baslik: baslikObj.baslik,
+                                konular: altKonular
+                            });
+                        })
+                        .withFailureHandler(error => {
+                            reject(`Eğitim konusu "${baslikObj.baslik || 'Bilinmiyor'}" için alt konular yüklenirken hata: ${error.message}`);
+                        })
+                        .getEgitimAltKonulariByColumn(baslikObj.colIndex); 
+                });
+            });
+
+            let egitimKonulariToPass = [];
+            try {
+                egitimKonulariToPass = await Promise.all(altKonuPromises);
+            } catch (error) {
+                showNotification(`Eğitim konuları yüklenirken bir hata oluştu: ${error}`, false);
+                document.getElementById('generateDocButton').disabled = false;
+                return;
+            }
+
+            const selectedPersonnel = Array.from(document.querySelectorAll('#personnelCheckboxes input[type="checkbox"]:checked'))
+                                                           .map(cb => {
+                                                                try {
+                                                                    return JSON.parse(cb.value);
+                                                                } catch (e) {
+                                                                    console.error("Personel checkbox değeri parse edilemedi:", cb.value, e);
+                                                                    return null; 
+                                                                }
+                                                           }).filter(Boolean); 
+            
+            if (selectedPersonnel.length === 0) {
+                showNotification('Lütfen tabloya eklenecek en az bir katılımcı seçiniz.', false);
+                document.getElementById('generateDocButton').disabled = false; 
+                return;
+            }
+
+            showNotification('Belge oluşturuluyor... Lütfen bekleyiniz.', true);
+
+            google.script.run
+                .withSuccessHandler(function(fileUrl) {
+                    showNotification('Belge başarıyla oluşturuldu! <a href="' + fileUrl + '" target="_blank">Belgeyi Aç</a>', true);
+                    document.getElementById('generateDocButton').disabled = false;
+                })
+                .withFailureHandler(function(error) {
+                    showNotification('Belge oluşturulurken hata oluştu: ' + error.message, false);
+                    document.getElementById('generateDocButton').disabled = false;
+                })
+                .createEgitimDocument({
+                    selectedFirm: selectedFirm, 
+                    UNVANI: firmDetails.UNVANI,
+                    ISYERIHEKIMI: firmDetails.ISYERIHEKIMI,
+                    IH_BELGE_NO: firmDetails.IH_BELGE_NO,
+                    ISGUZMANI: firmDetails.ISGUZMANI,
+                    IGU_BELGE_NO: firmDetails.IGU_BELGE_NO,
+                    ADRESI: firmDetails.ADRESI,
+                    formattedDates: formattedDates,
+                    formattedHours: formattedHours,
+                    selectedEgitimKonulari: egitimKonulariToPass, 
+                    selectedPersonnel: selectedPersonnel
+                });
+        }
+    </script>
+</body>
+</html>

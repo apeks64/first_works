@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 15px;
+      margin: 0;
+      background-color: #f8f8f8;
+      color: #333;
+    }
+    h3 {
+      color: #0056b3;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+      color: #555;
+    }
+    input[type="text"] {
+      width: calc(100% - 22px);
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      width: 100%;
+      font-size: 16px;
+      margin-top: 10px;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    /* Checkbox konteynerı */
+    .checkbox-container {
+      border: 1px solid #ddd;
+      padding: 10px;
+      max-height: 300px; /* Personel listesi için daha fazla yükseklik */
+      overflow-y: auto;
+      margin-bottom: 10px; /* Butonlara yakınlaştırdık */
+      background-color: #fff;
+      border-radius: 4px;
+    }
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 5px;
+      padding: 3px 0;
+    }
+    .checkbox-item input[type="checkbox"] {
+      width: auto;
+      margin: 0 8px 0 0;
+      position: relative;
+      top: -1px;
+    }
+    .checkbox-item label {
+      font-weight: normal;
+      margin-bottom: 0;
+      cursor: pointer;
+      flex-grow: 1;
+      color: #333;
+      font-size: 13px;
+    }
+
+    #resultTableContainer {
+      margin-top: 25px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      overflow: hidden;
+      width: calc(100% - 20px); 
+      margin-left: 10px; 
+      margin-right: 10px; 
+    }
+    #resultTable {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 8pt; /* Arial 8 font */
+      table-layout: fixed; /* Sabit tablo düzeni */
+    }
+    #resultTable th, #resultTable td {
+      border: 1px solid #e0e0e0;
+      padding: 12px 6px; /* Satır yüksekliği için üst ve alttan padding artırıldı */
+      text-align: left;
+      font-family: Arial, sans-serif; /* Arial font */
+      word-wrap: break-word; /* Uzun metinler için */
+      vertical-align: middle; /* Hücre içeriğini dikeyde ortala */
+    }
+    #resultTable th {
+      background-color: #f2f2f2;
+      font-weight: bold;
+      text-align: center;
+    }
+    /* Sütun genişlikleri */
+    #resultTable th:nth-child(1), #resultTable td:nth-child(1) { /* Sıra No. */
+      width: 40px; 
+      min-width: 40px;
+      text-align: center;
+    }
+    #resultTable th:nth-child(2), #resultTable td:nth-child(2) { /* TC Kimlik No. */
+      width: 100px;
+      min-width: 100px;
+    }
+    /* Kalan 3 sütun eşit genişlikte olacak */
+    #resultTable th:nth-child(3), #resultTable td:nth-child(3) { /* Adı Soyadı */
+      width: calc((100% - 140px) / 3); /* Toplam genişlik - (Sıra No + TC No) / 3 */
+      min-width: 120px; 
+    }
+    #resultTable th:nth-child(4), #resultTable td:nth-child(4) { /* İşi */
+      width: calc((100% - 140px) / 3);
+      min-width: 100px;
+    }
+    #resultTable th:nth-child(5), #resultTable td:nth-child(5) { /* İmza */
+      width: calc((100% - 140px) / 3);
+      min-width: 80px;
+    }
+
+    #copyButton {
+      background-color: #28a745;
+      margin-top: 15px;
+    }
+    #copyButton:hover {
+      background-color: #218838;
+    }
+    .status-message {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 4px;
+      font-size: 14px;
+      text-align: center;
+      display: none;
+    }
+    .status-message.info {
+      background-color: #e0f2f7;
+      border: 1px solid #007bff;
+      color: #0056b3;
+    }
+    .status-message.error {
+      background-color: #ffe6e6;
+      border: 1px solid #dc3545;
+      color: #c82333;
+    }
+    /* Yeni bildirim mesajı stili */
+    #notificationMessage {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #4CAF50; /* Yeşil */
+        color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+        z-index: 1000;
+        display: none;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    .action-buttons {
+        display: flex;
+        justify-content: space-between; 
+        margin-bottom: 15px;
+        gap: 10px; 
+    }
+    .action-buttons button {
+        width: 48%; 
+        padding: 8px 12px;
+        font-size: 14px;
+        margin-top: 0; 
+    }
+  </style>
+</head>
+<body>
+  <h3>Katılanlar Listesi</h3>
+
+  <label for="mainFilterInput">Personel Ara (İş Yeri, Adı, Soyadı ile):</label>
+  <input type="text" id="mainFilterInput" oninput="debounceFilter()" placeholder="İş yeri adı, ad veya soyad girin..." autocomplete="off">
+
+  <label>Eşleşen Personelleri Seç:</label>
+  <div id="personnelCheckboxes" class="checkbox-container">
+    <p style="text-align: center; color: #777;">Arama yapmak için yukarıdaki kutuya bir değer girin.</p>
+  </div>
+
+  <div class="action-buttons">
+    <button onclick="selectAllCheckboxes()">Tümünü Seç</button>
+    <button onclick="clearAllCheckboxes()">Tümünü Kaldır</button>
+  </div>
+
+  <div id="statusMessage" class="status-message info"></div>
+  <div id="notificationMessage"></div> <button onclick="generateTable()">Seçilenlerden Tablo Oluştur</button>
+
+  <div id="resultTableContainer" style="display:none;">
+    <table id="resultTable">
+      <thead>
+        <tr>
+          <th>Sıra No.</th>
+          <th>TC Kimlik No.</th>
+          <th>Adı Soyadı</th>
+          <th>İşi</th>
+          <th>İmza</th>
+        </tr>
+      </thead>
+      <tbody>
+        </tbody>
+    </table>
+  </div>
+  <button id="copyButton" onclick="copyTable()" style="display:none;">Tabloyu Panoya Kopyala</button>
+
+  <script>
+    let filterTimeout; 
+    const debounceDelay = 300; 
+
+    function debounceFilter() {
+      clearTimeout(filterTimeout);
+      filterTimeout = setTimeout(() => {
+        const filterValue = document.getElementById("mainFilterInput").value;
+        loadFilteredPersonnel(filterValue);
+      }, debounceDelay);
+    }
+
+    function loadFilteredPersonnel(filterValue) {
+      const personnelDiv = document.getElementById("personnelCheckboxes");
+      const statusDiv = document.getElementById("statusMessage");
+
+      personnelDiv.innerHTML = "<p style='text-align: center; color: #777;'>Personeller aranıyor... Lütfen bekleyiniz.</p>";
+      statusDiv.style.display = "none";
+
+      google.script.run
+        .withSuccessHandler(function(personnel) {
+          displayPersonnel(personnel);
+          if (personnel.length === 0 && filterValue.length > 0) {
+              statusDiv.className = "status-message info";
+              statusDiv.textContent = `"${filterValue}" için hiçbir eşleşen personel bulunamadı.`;
+              statusDiv.style.display = "block";
+          } else {
+              statusDiv.style.display = "none";
+          }
+        })
+        .withFailureHandler(function(error) {
+          personnelDiv.innerHTML = "<p style='text-align: center; color: #777;'>Personel yüklenirken bir hata oluştu.</p>";
+          statusDiv.className = "status-message error";
+          statusDiv.textContent = `Hata: ${error.message}`;
+          statusDiv.style.display = "block";
+        })
+        .getFilteredPersonnel(filterValue); 
+    }
+
+    function displayPersonnel(personnelToDisplay) {
+      const div = document.getElementById("personnelCheckboxes");
+      div.innerHTML = "";
+
+      if (!personnelToDisplay || personnelToDisplay.length === 0) {
+        div.innerHTML = "<p style='text-align: center; color: #777;'>Arama yapmak için yukarıdaki kutuya bir değer girin veya eşleşen personel bulunamadı.</p>";
+        return;
+      }
+
+      personnelToDisplay.forEach(p => {
+        const checkboxContainer = document.createElement("div");
+        checkboxContainer.className = "checkbox-item";
+        
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.id = `personel_${p.tc}_${p.ad.replace(/[^a-zA-Z0-9]/g, '_').replace(/\s/g, '_')}_${p.soyad.replace(/[^a-zA-Z0-9]/g, '_').replace(/\s/g, '_')}`; 
+        
+        checkbox.value = JSON.stringify({
+          tc: p.tc,
+          ad: p.ad,
+          soyad: p.soyad,
+          is: p.is 
+        });
+
+        const label = document.createElement("label");
+        label.htmlFor = checkbox.id;
+        label.textContent = `${p.bValue || ''} - ${p.ad || ''} ${p.soyad || ''} (TC: ${p.tc || ''})`; 
+
+        checkboxContainer.appendChild(checkbox);
+        checkboxContainer.appendChild(label);
+        div.appendChild(checkboxContainer);
+      });
+    }
+
+    function selectAllCheckboxes() {
+        const checkboxes = document.querySelectorAll('#personnelCheckboxes input[type="checkbox"]');
+        checkboxes.forEach(cb => cb.checked = true);
+    }
+
+    function clearAllCheckboxes() {
+        const checkboxes = document.querySelectorAll('#personnelCheckboxes input[type="checkbox"]');
+        checkboxes.forEach(cb => cb.checked = false);
+    }
+
+    function generateTable() {
+      const selectedCheckboxes = document.querySelectorAll('#personnelCheckboxes input[type="checkbox"]:checked');
+      const selectedPersonnel = Array.from(selectedCheckboxes).map(cb => JSON.parse(cb.value));
+
+      const tableBody = document.querySelector('#resultTable tbody');
+      tableBody.innerHTML = ''; 
+
+      if (selectedPersonnel.length === 0) {
+        alert('Lütfen tablo oluşturmak için en az bir personel seçiniz.');
+        document.getElementById("resultTableContainer").style.display = "none";
+        document.getElementById("copyButton").style.display = "none";
+        return;
+      }
+
+      let siraNo = 1;
+      selectedPersonnel.forEach(p => {
+        const row = tableBody.insertRow();
+        row.insertCell().textContent = siraNo++; 
+        row.insertCell().textContent = p.tc || ''; 
+        row.insertCell().textContent = `${p.ad || ''} ${p.soyad || ''}`; 
+        row.insertCell().textContent = p.is || ''; 
+        row.insertCell().textContent = ''; 
+      });
+
+      document.getElementById("resultTableContainer").style.display = "block";
+      document.getElementById("copyButton").style.display = "block";
+    }
+
+    function copyTable() {
+      const range = document.createRange();
+      range.selectNode(document.getElementById("resultTable"));
+      window.getSelection().removeAllRanges();
+      window.getSelection().addRange(range);
+      try {
+        const successful = document.execCommand('copy');
+        const msg = successful ? 'başarıyla kopyalandı!' : 'kopyalanamadı.';
+        showNotification('Tablo panoya ' + msg, successful); // Yeni bildirim fonksiyonunu çağır
+      } catch (err) {
+        showNotification('Tablo panoya kopyalanırken hata oluştu: ' + err, false);
+      }
+      window.getSelection().removeAllRanges(); 
+    }
+
+    // Yeni bildirim fonksiyonu
+    function showNotification(message, isSuccess) {
+        const notificationDiv = document.getElementById('notificationMessage');
+        notificationDiv.textContent = message;
+        notificationDiv.style.backgroundColor = isSuccess ? '#4CAF50' : '#f44336'; // Başarılıysa yeşil, değilse kırmızı
+        notificationDiv.style.display = 'block';
+
+        setTimeout(() => {
+            notificationDiv.style.display = 'none';
+        }, 1500); // 1.5 saniye sonra gizle (1 saniye biraz kısa kalabilir)
+    }
+  </script>
+</body>
+</html>
