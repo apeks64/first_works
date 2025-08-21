@@ -4,7 +4,7 @@ const DESTINATION_FOLDER_ID = '1TVjW_R8SSZsQ3qNcyA6X6ghlJNyN0niJ'; // Hedef klas
 
 // Tek bir fonksiyonla aktif sayfadan belge oluşturma
 function createDocument() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();  // Aktif sayfayı al
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet(); // Aktif sayfayı al
   if (!sheet) {
     SpreadsheetApp.getUi().alert('Aktif sayfa bulunamadı.');
     return;
@@ -24,11 +24,10 @@ function createDocument() {
     const numRows = range.getNumRows();
     
     for (let i = 0; i < numRows; i++) {
-      generateDocument(startRow + i);  // Her satır için belge oluştur
+      generateDocument(startRow + i, true); // Sessiz modda çalıştır
       Utilities.sleep(1000);  // Her belge arasında 1 saniye bekletme
     }
   });
-
   SpreadsheetApp.getUi().alert('Aktif sayfadan belge oluşturma işlemi tamamlandı.');
 }
 
@@ -43,7 +42,6 @@ function convertToTurkishUpperCase(str) {
 function convertAllToUpperCase() {
   const sheetNames = ['EK-2 BİLGİLER', 'EK-2_DB'];
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
- 
   sheetNames.forEach(sheetName => {
     const sheet = spreadsheet.getSheetByName(sheetName);
     if (!sheet) return;
@@ -59,6 +57,7 @@ function convertAllToUpperCase() {
           values[i][j] = convertToTurkishUpperCase(values[i][j]);
         }
       }
+  
     }
     range.setValues(values);
   });
@@ -77,12 +76,10 @@ function archiveNewFormResponses() {
   const tcColumnIndex = 5; 
   const dataB = sheetB.getDataRange().getValues();
   const existingTCNumbers = new Set(dataB.slice(1).map(row => row[tcColumnIndex - 1]));
-
   const dataA = sheetA.getDataRange().getValues();
   Logger.log("✅ EK-2 BİLGİLER'den alınan satır sayısı: " + dataA.length);
 
   const newUniqueRows = [];
-
   for (let i = 1; i < dataA.length; i++) {
     const row = dataA[i];
     const tcNumber = row[tcColumnIndex - 1];
@@ -106,33 +103,29 @@ function archiveNewFormResponses() {
 }
 
 
-function generateDocument(rowNumber) {
+function generateDocument(rowNumber, silentMode = false) {
   try {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('EK-2 BİLGİLER'); // Tablo adı
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('EK-2 BİLGİLER');
     if (!sheet) throw new Error('Tablo bulunamadı.');
 
-    if (!rowNumber) rowNumber = sheet.getLastRow(); // Parametre belirtilmezse son satır
+    if (!rowNumber) rowNumber = sheet.getLastRow();
 
-    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]; // Başlıklar
-    const data = sheet.getRange(rowNumber, 1, 1, sheet.getLastColumn()).getValues()[0]; // Belirtilen satırdaki veriler
-    const responseData = headers.reduce((obj, header, i) => ({ ...obj, [header]: data[i] }), {}); // Veriyi obje yap
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const data = sheet.getRange(rowNumber, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const responseData = headers.reduce((obj, header, i) => ({ ...obj, [header]: data[i] }), {});
 
     Logger.log('responseData:', responseData);
 
     const workplaceName = responseData['İş Yerinin Adı'] ? responseData['İş Yerinin Adı'].substring(0, 13) : 'Bilinmiyor';
     const firstName = responseData['Adı'] || 'Bilinmiyor';
     const lastName = responseData['Soyadı'] || 'Bilinmiyor';
-
     const fileName = `${workplaceName.slice(0, 13)} ${firstName} ${lastName} - Muayene Formu`;
-
-    // Doğrudan belirtilen klasöre kaydet
     const destinationFolder = DriveApp.getFolderById('1TVjW_R8SSZsQ3qNcyA6X6ghlJNyN0niJ');
 
     const template = DriveApp.getFileById(TEMPLATE_FILE_ID);
     const newDoc = template.makeCopy(fileName, destinationFolder); // Yeni dosya
     const doc = DocumentApp.openById(newDoc.getId());
     const body = doc.getBody();
-
     fillPlaceholders(body, responseData);
     addFLISTData(responseData, body);
     addSignatureImage(responseData, body); // İmza ekleme fonksiyonunu çağır
@@ -141,6 +134,9 @@ function generateDocument(rowNumber) {
     Logger.log('Belge başarıyla oluşturuldu!');
   } catch (e) {
     Logger.log('Hata: ' + e.message);
+    if (!silentMode) {
+      SpreadsheetApp.getUi().alert('Hata oluştu: ' + e.message);
+    }
   }
 }
 
@@ -171,7 +167,6 @@ function fillPlaceholders(body, data) {
     'Sigara içiyor musunuz?',
     'Alkol alıyor musunuz?',
   ];
-
   yesNoPlaceholders.forEach((placeholder) => {
     const yesKey = `{{${placeholder} - EVET}}`;
     const noKey = `{{${placeholder} - HAYIR}}`;
@@ -186,6 +181,7 @@ function fillPlaceholders(body, data) {
       body.replaceText(escapeRegExp(noKey), '✓');
       body.replaceText(escapeRegExp(quitKey), '');
     } else if (data[placeholder] === 'BIRAKMIŞ') {
+ 
       body.replaceText(escapeRegExp(yesKey), '');
       body.replaceText(escapeRegExp(noKey), '');
       body.replaceText(escapeRegExp(quitKey), '✓');
@@ -195,7 +191,6 @@ function fillPlaceholders(body, data) {
       body.replaceText(escapeRegExp(quitKey), '');
     }
   });
-
   // Tüm yer imleri için döngü
   for (const key in data) {
     let placeholder = `{{${key}}}`;
@@ -209,4 +204,3 @@ if (value instanceof Date) {
     body.replaceText(escapeRegExp(placeholder), String(value || ''));
   }
 }
-

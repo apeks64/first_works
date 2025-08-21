@@ -9,7 +9,6 @@ function generateDocument(rowNumber, silentMode = false) {
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
     const data = sheet.getRange(rowNumber, 1, 1, sheet.getLastColumn()).getValues()[0];
     const responseData = headers.reduce((obj, header, i) => ({ ...obj, [header]: data[i] }), {});
-
     Logger.log('responseData:', responseData);
 
     const workplaceName = responseData['İş Yerinin Adı'] ? responseData['İş Yerinin Adı'].substring(0, 13) : 'Bilinmiyor';
@@ -31,28 +30,6 @@ function generateDocument(rowNumber, silentMode = false) {
     doc.saveAndClose();
     Logger.log('Belge başarıyla oluşturuldu!');
 
-    if (!silentMode) {
-      const ui = SpreadsheetApp.getUi();
-      const docUrl = newDoc.getUrl();
-      const folderUrl = destinationFolder.getUrl();
-
-      const response = ui.alert(
-        'Başarılı!',
-        `Belge oluşturuldu!\n\nBelgeyi açmak ister misiniz?`,
-        ui.ButtonSet.YES_NO
-      );
-
-      if (response == ui.Button.YES) {
-        const html = HtmlService.createHtmlOutput(
-          `<script>window.open('${docUrl}', '_blank');google.script.host.close();</script>`)
-          .setWidth(250)
-          .setHeight(100);
-        SpreadsheetApp.getUi().showModalDialog(html, 'Belge Açılıyor...');
-      } else {
-        ui.alert('Oluşturulan belgeye klasörden ulaşabilirsiniz:\n' + folderUrl);
-      }
-    }
-
   } catch (e) {
     Logger.log('Hata: ' + e.message);
     if (!silentMode) {
@@ -66,7 +43,8 @@ function createSingleDocument() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('EK-2 BİLGİLER');
   const activeCell = sheet.getActiveCell();
   const rowNumber = activeCell.getRow();
-  generateDocument(rowNumber, false);
+  generateDocument(rowNumber, true); // Sessiz modda çalıştır
+  SpreadsheetApp.getUi().alert('✅ Belge başarıyla oluşturuldu!');
 }
 
 // --- Birden fazla belge oluştur (seçili satırlar) ---
@@ -77,27 +55,33 @@ function generateDocumentsFromSelection() {
 
     const selection = SpreadsheetApp.getActiveSpreadsheet().getActiveRange();
     if (!selection) throw new Error('Herhangi bir seçim yapılmadı.');
-
     const startRow = selection.getRow();
     const numRows = selection.getNumRows();
 
     const ui = SpreadsheetApp.getUi();
 
     let createdCount = 0;
+    const progressText = ui.showModalDialog(HtmlService.createHtmlOutput('<div id="progress">Belge oluşturuluyor...</div><script>function updateProgress(text) { document.getElementById("progress").innerText = text; }</script>').setWidth(300).setHeight(50), 'Belge Oluşturuluyor');
+
     for (let i = 0; i < numRows; i++) {
       const currentRow = startRow + i;
       const rowData = sheet.getRange(currentRow, 1, 1, sheet.getLastColumn()).getValues()[0];
       if (rowData.some(cell => cell !== "")) {
-        generateDocument(currentRow, true); // Sessiz çalıştırıyoruz
-        createdCount++;
+        try {
+          // İlerleme durumunu güncelle
+          SpreadsheetApp.getUi().showModalDialog(HtmlService.createHtmlOutput(`<div id="progress">${i + 1}/${numRows} belge oluşturuluyor...</div>`).setWidth(300).setHeight(50), 'Belge Oluşturuluyor');
+
+          generateDocument(currentRow, true); // Sessiz çalıştırıyoruz
+          createdCount++;
+        } catch (e) {
+          Logger.log(`Satır ${currentRow} için belge oluşturulurken hata: ` + e.message);
+        }
       }
     }
 
-    ui.alert(`✅ İşlem tamamlandı! ${createdCount} adet belge oluşturuldu.`);
-
+    SpreadsheetApp.getUi().alert(`✅ İşlem tamamlandı! ${createdCount} adet belge oluşturuldu.`);
   } catch (e) {
     Logger.log('Hata: ' + e.message);
     SpreadsheetApp.getUi().alert('Hata oluştu: ' + e.message);
   }
 }
-
