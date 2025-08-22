@@ -29,25 +29,26 @@
         flex-direction: column;
         margin-bottom: 15px;
       }
-      .date-group .date-container {
+      .date-container {
         display: flex;
         align-items: center;
         gap: 5px;
+        margin-bottom: 5px;
       }
-      .date-group .date-container input[type="text"] {
+      .date-container input[type="text"] {
         flex-grow: 1;
         margin-right: 0;
+        cursor: pointer;
       }
-      .date-group .hours-container {
+      .hours-container {
         display: flex;
         align-items: center;
-        margin-top: 5px;
         gap: 5px;
       }
-      .date-group .hours-container input {
+      .hours-container input {
         flex-grow: 1;
       }
-      .date-group .hours-container label {
+      .hours-container label {
         flex-shrink: 0;
         margin-bottom: 0;
       }
@@ -123,8 +124,8 @@
       .checkbox-item {
         display: flex;
         align-items: center;
-        margin-bottom: 5px;
-        padding: 3px 0;
+        margin-bottom: 2px; /* satır aralığı azaltıldı */
+        padding: 2px 0; /* satır aralığı azaltıldı */
       }
       .checkbox-item input[type="checkbox"] {
         width: auto;
@@ -156,6 +157,31 @@
       .action-buttons button:hover {
         background-color: #5a6268;
       }
+      .two-columns {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .date-row-group {
+        display: flex;
+        flex-direction: row;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+      .date-row-group .date-container, .date-row-group .hours-container, .date-row-group .validity-container {
+        flex-grow: 1;
+        margin-bottom: 0;
+        display: flex;
+        align-items: center;
+      }
+      .date-row-group .validity-container input {
+        flex-grow: 1;
+      }
+      .date-row-group label {
+        flex-shrink: 0;
+        margin-right: 5px;
+      }
     </style>
   </head>
   <body>
@@ -171,8 +197,7 @@
       <input type="text" id="rowNumbers" name="rowNumbers" required placeholder="Örnek: 14,15,25-29">
     
       <label>Eğitim Konuları:</label>
-      <div id="trainingTopicCheckboxes" class="checkbox-container">
-     
+      <div id="trainingTopicCheckboxes" class="checkbox-container two-columns">
         <p style="text-align: center; color: #777;">Konular yükleniyor...</p>
       </div>
       <div class="action-buttons">
@@ -180,46 +205,37 @@
         <button type="button" onclick="clearAllTopics()">Tümünü Kaldır</button>
       </div>
 
-      <label for="templates">Şablonlar (Birden fazla ise Ctrl ile seçin):</label><br>
-      <select id="templates" name="templates" multiple required style="width: 100%;
-        height: 150px;">
-        <option value="1">temel_yc_8_8</option>
-        <option value="2">temel8</option>
-        <option value="3">temel8.4</option>
-        <option value="4">yc</option>
-        <option value="5">katilan_listesi</option>
-        <option value="6">kkd</option>
-        <option value="7">yc_talimatı</option>
-        <option value="8">temel_8_8</option>
-        <option value="9">sınav_soruları</option>
-        <option value="10">konulu_sertifika</option>
-      </select><br><br>
-   
+      <label>Şablonlar:</label>
+      <div id="templatesCheckboxes" class="checkbox-container two-columns">
+        <p style="text-align: center; color: #777;">Şablonlar yükleniyor...</p>
+      </div>
+      <div class="action-buttons">
+        <button type="button" onclick="selectAllTemplates()">Tümünü Seç</button>
+        <button type="button" onclick="clearAllTemplates()">Tümünü Kaldır</button>
+      </div>
+
       <label>Tarihler ve Saatler:</label><br>
       
-      <div class="date-group">
+      <div class="date-row-group">
         <div class="date-container">
+          <label>1. Gün:</label>
           <input type="text" id="date1" name="date1" required placeholder="GG/AA/YYYY">
           <button type="button" class="date-button" onclick="changeDate('date1', -1)">&lt;</button>
           <button type="button" class="date-button" onclick="changeDate('date1', 1)">&gt;</button>
         </div>
         <div class="hours-container">
-       
           <label>Saat:</label>
           <input type="text" id="trainingHours1" name="trainingHours1" placeholder="Eğitim saati">
         </div>
-      </div>
-
-      <div class="date-group">
-        <div class="date-container">
+        <div class="validity-container">
+          <label>Geç. Tarihi:</label>
           <input type="text" id="date2" name="date2" disabled class="disabled-input">
-          <span style="margin-left: 10px;">Geçerlilik Bitiş (otomatik)</span>
         </div>
       </div>
 
-      <div class="date-group">
-  
+      <div class="date-row-group">
         <div class="date-container">
+          <label>2. Gün:</label>
           <input type="text" id="date3" name="date3" placeholder="GG/AA/YYYY">
           <button type="button" class="date-button" onclick="changeDate('date3', -1)">&lt;</button>
           <button type="button" class="date-button" onclick="changeDate('date3', 1)">&gt;</button>
@@ -228,20 +244,16 @@
           <label>Saat:</label>
           <input type="text" id="trainingHours2" name="trainingHours2" placeholder="Eğitim saati">
         </div>
- 
-      </div>
-
-      <div class="date-group">
-        <div class="date-container">
+        <div class="validity-container">
+          <label>Geç. Tarihi:</label>
           <input type="text" id="date4" name="date4" disabled class="disabled-input">
-          <span style="margin-left: 10px;">Geçerlilik Bitiş (otomatik)</span>
         </div>
       </div>
 
-      <div class="date-group">
+      <div class="date-row-group">
         <div class="date-container">
+          <label>3. Gün:</label>
           <input type="text" id="date5" name="date5" placeholder="GG/AA/YYYY">
-      
           <button type="button" class="date-button" onclick="changeDate('date5', -1)">&lt;</button>
           <button type="button" class="date-button" onclick="changeDate('date5', 1)">&gt;</button>
         </div>
@@ -249,13 +261,9 @@
           <label>Saat:</label>
           <input type="text" id="trainingHours3" name="trainingHours3" placeholder="Eğitim saati">
         </div>
-      </div>
-
-      <div class="date-group">
-        <div class="date-container">
-      
+        <div class="validity-container">
+          <label>Geç. Tarihi:</label>
           <input type="text" id="date6" name="date6" disabled class="disabled-input">
-          <span style="margin-left: 10px;">Geçerlilik Bitiş (otomatik)</span>
         </div>
       </div>
       
@@ -265,8 +273,7 @@
     <div id="progressMessage" style="display:none;"></div>
 
     <div id="resultMessage" style="display:none;">
-      <p>Bitti!
-      Sertifikalar başarıyla oluşturuldu.</p>
+      <p>Bitti! Sertifikalar başarıyla oluşturuldu.</p>
       <a href="https://drive.google.com/drive/folders/1yrwxxbb7WA2MxQ0UoZ5LN9jJahOaD5Uq" target="_blank">Sertifikalarınızı buradan görüntüleyebilirsiniz.</a><br>
       <a href="https://script.google.com/macros/s/AKfycby0speUpHZz1BwVuz_qvrIud0VyPAHhVvtSI7GMXnDNE2rqSQJfU2nXkfX35a4zDV3E/exec" target="_blank">İSG Belge Yönetimi için TIKLAYINIZ.</a>
     </div>
@@ -286,8 +293,7 @@
         }
         div.innerHTML = "";
         titles.forEach(title => {
-          const 
-          checkboxContainer = document.createElement("div");
+          const checkboxContainer = document.createElement("div");
           checkboxContainer.className = "checkbox-item";
           const checkbox = document.createElement("input");
           checkbox.type = "checkbox";
@@ -295,13 +301,37 @@
           checkbox.value = title;
           const label = document.createElement("label");
           label.textContent = title;
-          label.htmlFor = 
-          checkbox.id;
+          label.htmlFor = checkbox.id;
+          label.onclick = () => checkbox.click(); /* Etikete tıklanınca checkbox'ı işaretle */
           checkboxContainer.appendChild(checkbox);
           checkboxContainer.appendChild(label);
           div.appendChild(checkboxContainer);
         });
       }).getTrainingTopicTitles();
+
+      google.script.run.withSuccessHandler(function(templates) {
+          const div = document.getElementById('templatesCheckboxes');
+          if (templates.length === 0) {
+              div.innerHTML = "<p style='text-align: center; color: #777;'>Şablonlar yüklenirken hata oluştu.</p>";
+              return;
+          }
+          div.innerHTML = "";
+          templates.forEach(template => {
+              const checkboxContainer = document.createElement("div");
+              checkboxContainer.className = "checkbox-item";
+              const checkbox = document.createElement("input");
+              checkbox.type = "checkbox";
+              checkbox.name = "templates";
+              checkbox.value = template.id;
+              const label = document.createElement("label");
+              label.textContent = template.name;
+              label.htmlFor = checkbox.id;
+              label.onclick = () => checkbox.click(); /* Etikete tıklanınca checkbox'ı işaretle */
+              checkboxContainer.appendChild(checkbox);
+              checkboxContainer.appendChild(label);
+              div.appendChild(checkboxContainer);
+          });
+      }).getTemplateData();
 
       function selectAllTopics() {
         document.querySelectorAll('#trainingTopicCheckboxes input[type="checkbox"]').forEach(checkbox => {
@@ -314,7 +344,19 @@
           checkbox.checked = false;
         });
       }
-      
+
+      function selectAllTemplates() {
+        document.querySelectorAll('#templatesCheckboxes input[type="checkbox"]').forEach(checkbox => {
+          checkbox.checked = true;
+        });
+      }
+
+      function clearAllTemplates() {
+        document.querySelectorAll('#templatesCheckboxes input[type="checkbox"]').forEach(checkbox => {
+          checkbox.checked = false;
+        });
+      }
+
       function formatDateToDDMMYYYY(date) {
         const d = new Date(date);
         const day = String(d.getDate()).padStart(2, '0');
@@ -324,23 +366,18 @@
       }
 
       function parseDateFromDDMMYYYY(dateString) {
+        if (!dateString) return null;
         const parts = dateString.split('/');
-        return new Date(parts[2], parts[1] - 1, parts[0]);
+        if (parts.length === 3) {
+            const day = parseInt(parts[0], 10);
+            const month = parseInt(parts[1], 10) - 1;
+            const year = parseInt(parts[2], 10);
+            return new Date(year, month, day);
+        }
+        return null;
       }
-
-      function initializeDates() {
-        const today = new Date();
-        const nextBusinessDay1 = getNextBusinessDay(today);
-        const nextBusinessDay2 = getNextBusinessDay(nextBusinessDay1);
-
-        document.getElementById('date1').value = formatDateToDDMMYYYY(today);
-        document.getElementById('date3').value = formatDateToDDMMYYYY(nextBusinessDay1);
-        document.getElementById('date5').value = formatDateToDDMMYYYY(nextBusinessDay2);
-        
-        updateDependentDates();
-      }
-
-      function updateDependentDates() {
+      
+      function updateDependentDates(hazardYears) {
         try {
             const date1 = document.getElementById('date1').value;
             const date3 = document.getElementById('date3').value;
@@ -348,7 +385,7 @@
             
             if(date1) {
               const d1 = parseDateFromDDMMYYYY(date1);
-              const d2 = new Date(d1); d2.setFullYear(d2.getFullYear() + 1);
+              const d2 = new Date(d1); d2.setFullYear(d2.getFullYear() + hazardYears);
               document.getElementById('date2').value = formatDateToDDMMYYYY(d2);
             } else {
               document.getElementById('date2').value = '';
@@ -356,7 +393,7 @@
 
             if(date3) {
               const d3 = parseDateFromDDMMYYYY(date3);
-              const d4 = new Date(d3); d4.setFullYear(d4.getFullYear() + 1);
+              const d4 = new Date(d3); d4.setFullYear(d4.getFullYear() + hazardYears);
               document.getElementById('date4').value = formatDateToDDMMYYYY(d4);
             } else {
               document.getElementById('date4').value = '';
@@ -364,7 +401,7 @@
 
             if(date5) {
               const d5 = parseDateFromDDMMYYYY(date5);
-              const d6 = new Date(d5); d6.setFullYear(d6.getFullYear() + 1);
+              const d6 = new Date(d5); d6.setFullYear(d6.getFullYear() + hazardYears);
               document.getElementById('date6').value = formatDateToDDMMYYYY(d6);
             } else {
               document.getElementById('date6').value = '';
@@ -385,7 +422,14 @@
           currentDate = getPreviousBusinessDay(currentDate);
         }
         input.value = formatDateToDDMMYYYY(currentDate);
-        updateDependentDates();
+        
+        // Tehlike sınıfına göre tarihleri güncelle
+        const firmName = document.getElementById('selectedFirm').value;
+        if (firmName) {
+            google.script.run.withSuccessHandler(updateDependentDates).getHazardYearsForFirm(firmName);
+        } else {
+            updateDependentDates(1); // Firma seçilmezse varsayılan 1 yıl
+        }
       }
 
       function getNextBusinessDay(date) {
@@ -399,49 +443,57 @@
         return d;
       }
       
-      document.addEventListener('DOMContentLoaded', initializeDates);
-      document.getElementById('date1').addEventListener('change', updateDependentDates);
-      document.getElementById('date3').addEventListener('change', updateDependentDates);
-      document.getElementById('date5').addEventListener('change', updateDependentDates);
+      // Firm search normalization
+      function normalizeString(str) {
+        return str.toLowerCase().replace(/ç/g, 'c').replace(/ş/g, 's').replace(/ğ/g, 'g').replace(/ı/g, 'i').replace(/ö/g, 'o').replace(/ü/g, 'u').trim();
+      }
+
       document.getElementById("firmSearchBox").addEventListener("input", function() {
-        const filter = this.value.toLowerCase();
+        const filter = normalizeString(this.value);
         const firmListDiv = document.getElementById("firmList");
         firmListDiv.innerHTML = "";
         selectedFirmExact = "";
         if (filter.length === 0) {
           firmListDiv.style.display = 'none';
           document.getElementById("selectedFirm").value = "";
+          updateDependentDates(1); // Firma yoksa varsayılan 1 yıl
           return;
         }
   
-        const filteredFirms = allFirms.filter(firm => firm.toLowerCase().includes(filter));
+        const filteredFirms = allFirms.filter(firm => normalizeString(firm).includes(filter));
         if (filteredFirms.length > 0) {
           firmListDiv.style.display = 'block';
           filteredFirms.forEach(firm => {
             const div = document.createElement("div");
             div.textContent = firm;
             div.className = "firm-option";
-          
+        
             div.onclick = function() {
               document.getElementById("firmSearchBox").value = firm;
               document.getElementById("selectedFirm").value = firm;
               selectedFirmExact = firm;
               firmListDiv.innerHTML = "";
               firmListDiv.style.display = 'none';
+              // Firma seçilince tarihi güncelle
+              google.script.run.withSuccessHandler(updateDependentDates).getHazardYearsForFirm(firm);
             };
             firmListDiv.appendChild(div);
           });
         } else {
           firmListDiv.style.display = 'none';
           document.getElementById("selectedFirm").value = "";
+          updateDependentDates(1); // Firma bulunamazsa varsayılan 1 yıl
         }
-        const exactMatch = allFirms.find(firm => firm.toLowerCase() === filter);
+        const exactMatch = allFirms.find(firm => normalizeString(firm) === filter);
         if (exactMatch) {
           document.getElementById("selectedFirm").value = exactMatch;
           selectedFirmExact = exactMatch;
           firmListDiv.style.display = 'none';
+          // Firma seçilince tarihi güncelle
+          google.script.run.withSuccessHandler(updateDependentDates).getHazardYearsForFirm(exactMatch);
         }
       });
+
       document.getElementById("certificateForm").addEventListener("submit", function(event) {
           event.preventDefault();
 
@@ -451,10 +503,8 @@
               return;
           }
 
-          const templates = Array.from(document.getElementById("templates").options)
-         
-          .filter(option => option.selected)
-              .map(option => parseInt(option.value));
+          const templates = Array.from(document.querySelectorAll('#templatesCheckboxes input[type="checkbox"]:checked'))
+          .map(cb => parseInt(cb.value));
 
           if (templates.length === 0) {
               alert("Lütfen en az bir şablon seçin.");
@@ -462,7 +512,6 @@
           }
 
           const selectedTopicNames = Array.from(document.querySelectorAll('#trainingTopicCheckboxes input[type="checkbox"]:checked'))
-      
           .map(cb => cb.value);
 
           if (selectedTopicNames.length === 0) {
@@ -480,9 +529,7 @@
 
           const progressMessageDiv = document.getElementById("progressMessage");
           progressMessageDiv.style.display = "block";
-          
-          // DÜZENLEME BAŞLANGIÇ
-          const KATILAN_LISTESI_ID_VALUE = 5; // katilan_listesi seçeneğinin değeri
+          const KATILAN_LISTESI_ID_VALUE = 5;
           let totalDocsCount = 0;
           if (templates.length === 1 && templates[0] === KATILAN_LISTESI_ID_VALUE) {
               totalDocsCount = 1;
@@ -502,16 +549,13 @@
               totalDocsCount = rowNumbers.length * templates.length;
               progressMessageDiv.textContent = `Toplam ${totalDocsCount} belge oluşturuluyor...`;
           }
-          // DÜZENLEME BİTİŞ
-
           document.getElementById("resultMessage").style.display = "none";
-          
           google.script.run
               .withSuccessHandler(function(report) {
                   progressMessageDiv.style.display = "none";
-                  document.getElementById("resultMessage").style.display = "block";
+                  const resultMessageDiv = document.getElementById("resultMessage");
+                  resultMessageDiv.style.display = "block";
 
-                  // DÜZENLEME BAŞLANGIÇ
                   if (report.success) {
                       resultMessageDiv.style.color = "green";
                       resultMessageDiv.textContent = "✅ İşlem tamamlandı! " + report.totalDocsCreated + " belge başarıyla oluşturuldu.";
@@ -523,10 +567,8 @@
                       });
                       resultMessageDiv.textContent = errorMessage;
                   }
-                  // DÜZENLEME BİTİŞ
               })
               .withFailureHandler(function(error) {
-                
                   progressMessageDiv.style.display = "block";
                   progressMessageDiv.style.color = "red";
                   progressMessageDiv.textContent = "Hata oluştu: " + error.message;
@@ -534,6 +576,68 @@
               })
               .processFormWithRowNumbers(rowNumbersStr, templates, firm, date1, date3, date5, 
           trainingHours1, trainingHours2, trainingHours3, selectedTopicNames);
+      });
+      
+      // İlk yüklemede ve firma seçimi değiştiğinde tarihleri güncellemek için dinleyiciler
+      document.getElementById('date1').addEventListener('change', () => {
+          const firmName = document.getElementById('selectedFirm').value;
+          if (firmName) {
+              google.script.run.withSuccessHandler(updateDependentDates).getHazardYearsForFirm(firmName);
+          } else {
+              updateDependentDates(1); // Firma seçilmezse varsayılan 1 yıl
+          }
+      });
+      document.getElementById('date3').addEventListener('change', () => {
+          const firmName = document.getElementById('selectedFirm').value;
+          if (firmName) {
+              google.script.run.withSuccessHandler(updateDependentDates).getHazardYearsForFirm(firmName);
+          } else {
+              updateDependentDates(1); // Firma seçilmezse varsayılan 1 yıl
+          }
+      });
+      document.getElementById('date5').addEventListener('change', () => {
+          const firmName = document.getElementById('selectedFirm').value;
+          if (firmName) {
+              google.script.run.withSuccessHandler(updateDependentDates).getHazardYearsForFirm(firmName);
+          } else {
+              updateDependentDates(1); // Firma seçilmezse varsayılan 1 yıl
+          }
+      });
+      
+      // Sayfa yüklendiğinde tarihleri ve tehlike sınıfına göre geçerlilik bitiş tarihini ayarla
+      document.addEventListener('DOMContentLoaded', () => {
+        const today = new Date();
+        document.getElementById('date1').value = formatDateToDDMMYYYY(today);
+        
+        // Tehlike sınıfı için varsayılan yıl değeriyle başlat
+        updateDependentDates(1);
+      });
+      
+      // Tarih ve saat alanları için varsayılan değerleri ayarla
+      document.addEventListener('DOMContentLoaded', function() {
+        // Bugünün tarihi
+        let today = new Date();
+        
+        // Bugün iş günü mü kontrol et, değilse bir önceki iş gününü bul
+        if (today.getDay() === 0 || today.getDay() === 6) {
+          today = getPreviousBusinessDay(today);
+        }
+        document.getElementById('date1').value = formatDateToDDMMYYYY(today);
+        
+        // İkinci ve üçüncü günleri ayarla
+        let secondDay = getNextBusinessDay(today);
+        document.getElementById('date3').value = formatDateToDDMMYYYY(secondDay);
+        
+        let thirdDay = getNextBusinessDay(secondDay);
+        document.getElementById('date5').value = formatDateToDDMMYYYY(thirdDay);
+        
+        // Saatleri ayarla
+        document.getElementById('trainingHours1').value = '8';
+        document.getElementById('trainingHours2').value = '8';
+        document.getElementById('trainingHours3').value = '4';
+        
+        // Firma seçilmediği için varsayılan 1 yıl ile geçerlilik tarihlerini güncelle
+        updateDependentDates(1);
       });
     </script>
   </body>
