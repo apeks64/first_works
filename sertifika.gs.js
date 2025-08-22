@@ -247,6 +247,13 @@ function processFormWithRowNumbers(rowNumbersStr, templates, firm, date1Str, dat
           headerRow.appendTableCell(h);
         });
 
+        // Sütun genişliklerini ayarla
+        table.setColumnWidth(0, 50);
+        table.setColumnWidth(1, 90);
+        table.setColumnWidth(2, 150);
+        table.setColumnWidth(3, 150);
+        table.setColumnWidth(4, 100);
+
         let sira = 1;
         selectedPersonnel.forEach(p => {
           const r = table.appendTableRow();
@@ -268,7 +275,6 @@ function processFormWithRowNumbers(rowNumbersStr, templates, firm, date1Str, dat
       failedCreations.push({ template: 'Katılımcı Listesi', error: e.message });
     }
   }
-
   // ---- Diğer Şablonlar ----
   const otherTemplates = templates.filter(t => t !== KATILAN_LISTESI_INDEX);
   selectedPersonnel.forEach(person => {

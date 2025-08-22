@@ -1,51 +1,50 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <base target="_top">
   <style>
-    #filterInput {
-      width: 100%;
-      margin-bottom: 10px;
-      padding: 5px;
-    }
-    #dataList {
-      max-height: 200px;
-      overflow-y: auto;
-      border: 1px solid #ccc;
-      padding: 5px;
-    }
-    .selectItem {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+    body { font-family: sans-serif; }
+    #filterInput { width: 100%; margin-bottom: 10px; padding: 8px; box-sizing: border-box; }
+    #dataList { max-height: 250px; overflow-y: auto; border: 1px solid #ccc; padding: 5px; margin-bottom: 10px; }
+    .selectItem { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+    button { padding: 8px 12px; margin-right: 5px; cursor: pointer; }
+    .button-group { display: flex; justify-content: space-between; margin-bottom: 10px; }
+    .delete-buttons { margin-top: 15px; }
   </style>
 </head>
 <body>
-  <h3>Veri Seçimi</h3>
-  <input type="text" id="filterInput" placeholder="Filtrele..." oninput="filterData()">
-  <button onclick="selectAll()">Tümünü Seç</button>
-  <button onclick="selectFiltered()">Filtreleneni Seç</button>
-  <button onclick="deselectAll()">Tümünü Kaldır</button>
-  <br><br>
+  <h3>Eski Kayıtları Sil</h3>
+  <p>7 günden eski kayıtlara sahip firmaları seçerek silebilirsiniz.</p>
+  <input type="text" id="filterInput" placeholder="Firma Adı Filtrele..." oninput="filterData()">
+
+  <div class="button-group">
+    <button onclick="selectAll()">Tümünü Seç</button>
+    <button onclick="selectFiltered()">Filtrelenenleri Seç</button>
+    <button onclick="deselectAll()">Tümünü Kaldır</button>
+  </div>
+  
   <div id="dataList"></div>
-  <button onclick="submitSelection()">Seçili Olanları Sil</button>
+  
+  <div class="delete-buttons">
+    <button onclick="submitOldRecordsDeletion()">Seçili Firmaların Eski Kayıtlarını Sil</button>
+    <button onclick="submitAllRecordsDeletion()">Seçili Firmaların TÜM Kayıtlarını Sil</button>
+  </div>
 
   <script>
     let allFirms = [];
 
     function filterData() {
       let input = document.getElementById("filterInput").value.toLowerCase();
-      let dataList = document.getElementById("dataList");
-      dataList.innerHTML = ""; 
-
-      allFirms
-        .filter(firm => firm.toLowerCase().includes(input)) // Yalnızca eşleşenleri göster
-        .forEach(firm => {
-          let div = document.createElement("div");
-          div.classList.add("selectItem");
-          div.innerHTML = `<input type="checkbox" value="${firm}"> ${firm}`;
-          dataList.appendChild(div);
-        });
+      let items = document.querySelectorAll("#dataList .selectItem");
+      
+      items.forEach(item => {
+        let firmName = item.querySelector("label").textContent.toLowerCase();
+        if (firmName.includes(input)) {
+          item.style.display = "flex";
+        } else {
+          item.style.display = "none";
+        }
+      });
     }
 
     function selectAll() {
@@ -63,18 +62,69 @@
     function deselectAll() {
       document.querySelectorAll("#dataList input").forEach(el => el.checked = false);
     }
-
-    function submitSelection() {
-      let selectedValues = Array.from(document.querySelectorAll("#dataList input:checked"))
-        .map(input => input.value);
-      google.script.run.deleteSelectedFirms(selectedValues);
-      google.script.host.close();
+    
+    function updateList(firms) {
+      allFirms = firms;
+      let dataList = document.getElementById("dataList");
+      dataList.innerHTML = '';
+      if (allFirms.length === 0) {
+        dataList.innerHTML = '<p>Silinebilecek eski kayıt bulunmuyor.</p>';
+      } else {
+        allFirms.forEach(firm => {
+          let div = document.createElement("div");
+          div.classList.add("selectItem");
+          div.innerHTML = `<input type="checkbox" value="${firm}" id="${firm}"><label for="${firm}">${firm}</label>`;
+          dataList.appendChild(div);
+        });
+      }
+      filterData();
     }
 
-    google.script.run.withSuccessHandler(function(firms) {
-      allFirms = firms; 
-      filterData(); // Listeyi başta yükle
-    }).getUniqueFirmalar();
+    function submitOldRecordsDeletion() {
+      let selectedValues = Array.from(document.querySelectorAll("#dataList input:checked"))
+        .map(input => input.value);
+      
+      if (selectedValues.length === 0) {
+        alert("Lütfen silmek istediğiniz firmaları seçin.");
+        return;
+      }
+      
+      google.script.run
+        .withSuccessHandler(function(updatedFirms) {
+          alert("Seçilen firmaların eski kayıtları başarıyla silindi. Liste yenileniyor.");
+          updateList(updatedFirms);
+        })
+        .withFailureHandler(function(error) {
+          alert("Hata: " + error.message);
+        })
+        .deleteOldRecords(selectedValues);
+    }
+
+    function submitAllRecordsDeletion() {
+      let selectedValues = Array.from(document.querySelectorAll("#dataList input:checked"))
+        .map(input => input.value);
+      
+      if (selectedValues.length === 0) {
+        alert("Lütfen silmek istediğiniz firmaları seçin.");
+        return;
+      }
+      
+      if (!confirm("Seçili firmalara ait TÜM kayıtlar silinecek. Emin misiniz?")) {
+        return;
+      }
+
+      google.script.run
+        .withSuccessHandler(function(updatedFirms) {
+          alert("Seçilen firmaların tüm kayıtları başarıyla silindi. Liste yenileniyor.");
+          updateList(updatedFirms);
+        })
+        .withFailureHandler(function(error) {
+          alert("Hata: " + error.message);
+        })
+        .deleteAllRecords(selectedValues);
+    }
+
+    google.script.run.withSuccessHandler(updateList).getUniqueOldFirms();
   </script>
 </body>
 </html>

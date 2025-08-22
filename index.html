@@ -103,9 +103,14 @@
         background-color: #007bb5;
       }
       #resultMessage {
-        margin-top: 20px;
-        color: green;
-        font-weight: bold;
+        margin-top: 10px;
+      }
+      #resultMessage p {
+          font-weight: bold;
+          margin-bottom: 5px;
+      }
+      #resultMessage a {
+        display: inline-block;
       }
       #progressMessage {
         margin-top: 15px;
@@ -117,15 +122,15 @@
         padding: 10px;
         max-height: 300px;
         overflow-y: auto;
-        margin-bottom: 10px;
+        margin-bottom: 4px; /* Boşluk azaltıldı */
         background-color: #fff;
         border-radius: 4px;
       }
       .checkbox-item {
         display: flex;
         align-items: center;
-        margin-bottom: 2px; /* satır aralığı azaltıldı */
-        padding: 2px 0; /* satır aralığı azaltıldı */
+        margin-bottom: 2px;
+        padding: 2px 0;
       }
       .checkbox-item input[type="checkbox"] {
         width: auto;
@@ -144,7 +149,7 @@
       .action-buttons {
         display: flex;
         justify-content: space-between;
-        margin-bottom: 15px;
+        margin-bottom: 4px; /* Boşluk azaltıldı */
         gap: 10px;
       }
       .action-buttons button {
@@ -271,11 +276,11 @@
     </form>
 
     <div id="progressMessage" style="display:none;"></div>
-
+    
     <div id="resultMessage" style="display:none;">
-      <p>Bitti! Sertifikalar başarıyla oluşturuldu.</p>
-      <a href="https://drive.google.com/drive/folders/1yrwxxbb7WA2MxQ0UoZ5LN9jJahOaD5Uq" target="_blank">Sertifikalarınızı buradan görüntüleyebilirsiniz.</a><br>
-      <a href="https://script.google.com/macros/s/AKfycby0speUpHZz1BwVuz_qvrIud0VyPAHhVvtSI7GMXnDNE2rqSQJfU2nXkfX35a4zDV3E/exec" target="_blank">İSG Belge Yönetimi için TIKLAYINIZ.</a>
+        <p></p>
+        <a href="https://drive.google.com/drive/folders/1yrwxxbb7WA2MxQ0UoZ5LN9jJahOaD5Uq" target="_blank">Sertifikalarınızı buradan görüntüleyebilirsiniz.</a><br>
+        <a href="https://script.google.com/macros/s/AKfycby0speUpHZz1BwVuz_qvrIud0VyPAHhVvtSI7GMXnDNE2rqSQJfU2nXkfX35a4zDV3E/exec" target="_blank">İSG Belge Yönetimi için TIKLAYINIZ.</a>
     </div>
 
     <script>
@@ -293,7 +298,8 @@
         }
         div.innerHTML = "";
         titles.forEach(title => {
-          const checkboxContainer = document.createElement("div");
+          const 
+          checkboxContainer = document.createElement("div");
           checkboxContainer.className = "checkbox-item";
           const checkbox = document.createElement("input");
           checkbox.type = "checkbox";
@@ -301,12 +307,14 @@
           checkbox.value = title;
           const label = document.createElement("label");
           label.textContent = title;
-          label.htmlFor = checkbox.id;
-          label.onclick = () => checkbox.click(); /* Etikete tıklanınca checkbox'ı işaretle */
+  
+          label.htmlFor = 
+          checkbox.id;
+          label.onclick = () => checkbox.click();
           checkboxContainer.appendChild(checkbox);
           checkboxContainer.appendChild(label);
           div.appendChild(checkboxContainer);
-        });
+ });
       }).getTrainingTopicTitles();
 
       google.script.run.withSuccessHandler(function(templates) {
@@ -326,7 +334,7 @@
               const label = document.createElement("label");
               label.textContent = template.name;
               label.htmlFor = checkbox.id;
-              label.onclick = () => checkbox.click(); /* Etikete tıklanınca checkbox'ı işaretle */
+              label.onclick = () => checkbox.click();
               checkboxContainer.appendChild(checkbox);
               checkboxContainer.appendChild(label);
               div.appendChild(checkboxContainer);
@@ -422,7 +430,6 @@
           currentDate = getPreviousBusinessDay(currentDate);
         }
         input.value = formatDateToDDMMYYYY(currentDate);
-        
         // Tehlike sınıfına göre tarihleri güncelle
         const firmName = document.getElementById('selectedFirm').value;
         if (firmName) {
@@ -538,12 +545,13 @@
               const rowNumbers = rowNumbersStr.split(',').reduce((acc, current) => {
                   const range = current.split('-');
                   if (range.length === 2) {
-                      for (let i = parseInt(range[0]); i <= parseInt(range[1]); i++) {
+                      for (let i = parseInt(range[0]); i <= 
+                      parseInt(range[1]); i++) {
                           acc.push(i);
                       }
                   } else {
                       acc.push(parseInt(current));
-                  }
+                      }
                   return acc;
               }, []);
               totalDocsCount = rowNumbers.length * templates.length;
@@ -554,21 +562,23 @@
               .withSuccessHandler(function(report) {
                   progressMessageDiv.style.display = "none";
                   const resultMessageDiv = document.getElementById("resultMessage");
+                  const resultParagraph = resultMessageDiv.querySelector("p");
                   resultMessageDiv.style.display = "block";
 
                   if (report.success) {
                       resultMessageDiv.style.color = "green";
-                      resultMessageDiv.textContent = "✅ İşlem tamamlandı! " + report.totalDocsCreated + " belge başarıyla oluşturuldu.";
+                      resultParagraph.textContent = `✅ Bitti! ${report.totalDocsCreated} belge başarıyla oluşturuldu.`;
                   } else {
                       resultMessageDiv.style.color = "red";
-                      let errorMessage = "⚠️ Bazı belgeler oluşturulamadı:\n\n";
+                      let errorMessage = `⚠️ Bazı belgeler oluşturulamadı:\n\n`;
                       report.failedCreations.forEach(item => {
                           errorMessage += `- "${item.template}" şablonunda hata: ${item.error}\n`;
                       });
-                      resultMessageDiv.textContent = errorMessage;
+                      resultParagraph.textContent = errorMessage;
                   }
               })
               .withFailureHandler(function(error) {
+                  const progressMessageDiv = document.getElementById("progressMessage");
                   progressMessageDiv.style.display = "block";
                   progressMessageDiv.style.color = "red";
                   progressMessageDiv.textContent = "Hata oluştu: " + error.message;
@@ -584,7 +594,7 @@
           if (firmName) {
               google.script.run.withSuccessHandler(updateDependentDates).getHazardYearsForFirm(firmName);
           } else {
-              updateDependentDates(1); // Firma seçilmezse varsayılan 1 yıl
+              updateDependentDates(1);
           }
       });
       document.getElementById('date3').addEventListener('change', () => {
@@ -592,7 +602,7 @@
           if (firmName) {
               google.script.run.withSuccessHandler(updateDependentDates).getHazardYearsForFirm(firmName);
           } else {
-              updateDependentDates(1); // Firma seçilmezse varsayılan 1 yıl
+              updateDependentDates(1);
           }
       });
       document.getElementById('date5').addEventListener('change', () => {
@@ -600,11 +610,9 @@
           if (firmName) {
               google.script.run.withSuccessHandler(updateDependentDates).getHazardYearsForFirm(firmName);
           } else {
-              updateDependentDates(1); // Firma seçilmezse varsayılan 1 yıl
+              updateDependentDates(1);
           }
       });
-      
-      // Sayfa yüklendiğinde tarihleri ve tehlike sınıfına göre geçerlilik bitiş tarihini ayarla
       document.addEventListener('DOMContentLoaded', () => {
         const today = new Date();
         document.getElementById('date1').value = formatDateToDDMMYYYY(today);
