@@ -10,10 +10,14 @@
     button { padding: 8px 12px; margin-right: 5px; cursor: pointer; }
     .button-group { display: flex; justify-content: space-between; margin-bottom: 10px; }
     .delete-buttons { margin-top: 15px; }
+    .warning-message { font-weight: bold; color: #d63300; padding: 10px; border: 1px solid #d63300; border-radius: 5px; margin-bottom: 15px; }
   </style>
 </head>
 <body>
   <h3>Eski Kayıtları Sil</h3>
+  <div class="warning-message">
+    Lütfen işlemi biten ve kendinize ait olan firmalara ait verileri siliniz!
+  </div>
   <p>7 günden eski kayıtlara sahip firmaları seçerek silebilirsiniz.</p>
   <input type="text" id="filterInput" placeholder="Firma Adı Filtrele..." oninput="filterData()">
 

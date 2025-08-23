@@ -1,36 +1,31 @@
 /**
  * FilterAndDeleteUI HTML dosyasını içeren bir modal diyalog gösterir.
- * Bu diyalog, 7 günden eski kayıtları olan firmaları listeler.
- * Bu fonksiyon hem otomatik olarak hem de menüden manuel olarak çalıştırılabilir.
  */
 function showFilterDialog() {
   const ui = SpreadsheetApp.getUi();
   const activeSheetName = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet().getName();
   const targetSheetName = "EK-2 BİLGİLER";
 
-  // Sadece "EK-2 BİLGİLER" sayfası aktifse çalış
   if (activeSheetName !== targetSheetName) {
-    return; // Uyarı vermeden sessizce durur.
+    return;
   }
   
   const uniqueOldFirms = getUniqueOldFirms();
 
   if (uniqueOldFirms.length === 0) {
-    // Eski kayıt yoksa bilgilendirme mesajı göster
     ui.alert("Eski Kayıt Uyarısı", "7 günden eski silinebilecek kayıt bulunmamaktadır.", ui.ButtonSet.OK);
     return;
   }
   
   const htmlOutput = HtmlService.createHtmlOutputFromFile("FilterAndDeleteUI")
-      .setWidth(400)
-      .setHeight(500);
+      .setWidth(500)
+      .setHeight(900);
   
   ui.showModalDialog(htmlOutput, "Eski Kayıtları Sil");
 }
 
 /**
  * EK-2 BİLGİLER sayfasından 7 günden eski kayıtları olan benzersiz firma adlarını alır.
- * @returns {string[]} Benzersiz firma adlarının listesi.
  */
 function getUniqueOldFirms() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("EK-2 BİLGİLER");
@@ -39,8 +34,8 @@ function getUniqueOldFirms() {
     return [];
   }
   
-  const timeStampColumn = 1; // A sütunu
-  const firmNameColumn = 2; // B sütunu
+  const timeStampColumn = 1; 
+  const firmNameColumn = 2; 
   const lastRow = sheet.getLastRow();
   
   if (lastRow <= 1) {
@@ -68,8 +63,6 @@ function getUniqueOldFirms() {
 
 /**
  * Seçilen firmaların sadece 7 günden eski kayıtlarını siler.
- * @param {string[]} selectedFirms - Silinecek firmaların adlarını içeren bir dizi.
- * @returns {string[]} Kalan benzersiz firma adlarının listesi.
  */
 function deleteOldRecords(selectedFirms) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("EK-2 BİLGİLER");
@@ -77,8 +70,8 @@ function deleteOldRecords(selectedFirms) {
     throw new Error("Hata: 'EK-2 BİLGİLER' adında bir sayfa bulunamadı.");
   }
   
-  const timeStampColumn = 1; // A sütunu
-  const firmNameColumn = 2; // B sütunu
+  const timeStampColumn = 1; 
+  const firmNameColumn = 2; 
   const lastRow = sheet.getLastRow();
   const data = sheet.getRange(2, timeStampColumn, lastRow - 1, firmNameColumn).getValues();
   const rowsToDelete = [];
@@ -104,8 +97,6 @@ function deleteOldRecords(selectedFirms) {
 
 /**
  * Seçilen firmalara ait TÜM kayıtları (tarih fark etmeksizin) siler.
- * @param {string[]} selectedFirms - Silinecek firmaların adlarını içeren bir dizi.
- * @returns {string[]} Kalan benzersiz firma adlarının listesi.
  */
 function deleteAllRecords(selectedFirms) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("EK-2 BİLGİLER");
@@ -113,7 +104,7 @@ function deleteAllRecords(selectedFirms) {
     throw new Error("Hata: 'EK-2 BİLGİLER' adında bir sayfa bulunamadı.");
   }
   
-  const firmNameColumn = 2; // B sütunu
+  const firmNameColumn = 2; 
   const lastRow = sheet.getLastRow();
   const data = sheet.getRange(2, firmNameColumn, lastRow - 1, 1).getValues();
   const rowsToDelete = [];
@@ -131,4 +122,18 @@ function deleteAllRecords(selectedFirms) {
   });
   
   return getUniqueOldFirms();
+}
+
+/**
+ * Belirtilen klasör ID'sine sahip Google Drive klasörünü açar.
+ */
+function klasoruAc() {
+  var folderId = '1TVjW_R8SSZsQ3qNcyA6X6ghlJNyN0niJ'; 
+  var url = 'https://drive.google.com/drive/folders/' + folderId;
+
+  var html = HtmlService.createHtmlOutput('<script>window.open("' + url + '", "_blank");google.script.host.close();</script>')
+      .setWidth(100)
+      .setHeight(10);
+  
+  SpreadsheetApp.getUi().showModalDialog(html, 'Klasör Açılıyor...');
 }

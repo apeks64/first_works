@@ -1,261 +1,134 @@
-//Bu kod Ek-2 oluşturmak için bir modal menü açar. Manuel ek-2 gas koduyla irtibatlıdır.
 <!DOCTYPE html>
 <html>
-  <head>
-    <base target="_top">
-    <style>
-      body {
-        font-family: sans-serif;
-        margin: 10px;
-        background-color: #f4f4f4;
-        color: #333;
-      }
-      .container {
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-        padding: 10px;
-      }
-      .filter-group {
-        display: flex;
-        gap: 20px;
-      }
-      .column-filter {
-        flex: 1;
-        border: 1px solid #ddd;
-        padding: 15px;
-        border-radius: 8px;
-        background-color: #fff;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-      }
-      .column-filter h4 {
-        margin-top: 0;
-        font-size: 16px;
-        color: #005A8D;
-      }
-      .filter-options {
-        max-height: 400px;
-        overflow-y: auto;
-        border-top: 1px solid #eee;
-        padding-top: 10px;
-      }
-      label {
-        display: block;
-        margin-bottom: 5px;
-        cursor: pointer;
-      }
-      input[type="checkbox"] {
-        margin-right: 8px;
-      }
-      button {
-        padding: 10px 15px;
-        cursor: pointer;
-        border: none;
-        border-radius: 5px;
-        font-weight: bold;
-        transition: background-color 0.3s ease;
-      }
-      button:hover {
-        opacity: 0.8;
-      }
-      .button-container {
-        display: flex;
-        justify-content: flex-end;
-        gap: 10px;
-        margin-top: 20px;
-      }
-      #cancel-button {
-        background-color: #e0e0e0;
-        color: #555;
-      }
-      #generate-button {
-        background-color: #007BFF;
-        color: #fff;
-      }
-      .spinner {
-        border: 4px solid #f3f3f3;
-        border-top: 4px solid #3498db;
-        border-radius: 50%;
-        width: 20px;
-        height: 20px;
-        animation: spin 1s linear infinite;
-        display: inline-block;
-        margin-right: 10px;
-      }
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-      .search-box {
-        width: 100%;
-        padding: 8px;
-        box-sizing: border-box;
-        margin-bottom: 10px;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-      }
-      #status-message {
-        color: #555;
-        font-style: italic;
-        margin-top: 10px;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <p>Belge oluşturmak istediğiniz satırları filtreleyin ve seçin.</p>
+<head>
+  <base target="_top">
+  <style>
+    body { font-family: sans-serif; }
+    #filterInput { width: 100%; margin-bottom: 10px; padding: 8px; box-sizing: border-box; }
+    #dataList { max-height: 250px; overflow-y: auto; border: 1px solid #ccc; padding: 5px; margin-bottom: 10px; }
+    .selectItem { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+    button { padding: 8px 12px; margin-right: 5px; cursor: pointer; }
+    .button-group { display: flex; justify-content: space-between; margin-bottom: 10px; }
+    .delete-buttons { margin-top: 15px; }
+    .warning-message { font-weight: bold; color: #d63300; padding: 10px; border: 1px solid #d63300; border-radius: 5px; margin-bottom: 15px; }
+  </style>
+</head>
+<body>
+  <h3>Eski Kayıtları Sil</h3>
+  <div class="warning-message">
+    Lütfen işlemi biten ve kendinize ait olan firmalara ait verileri siliniz!
+  </div>
+  <p>7 günden eski kayıtlara sahip firmaları seçerek silebilirsiniz.</p>
+  <input type="text" id="filterInput" placeholder="Firma Adı Filtrele..." oninput="filterData()">
+
+  <div class="button-group">
+    <button onclick="selectAll()">Tümünü Seç</button>
+    <button onclick="selectFiltered()">Filtrelenenleri Seç</button>
+    <button onclick="deselectAll()">Tümünü Kaldır</button>
+  </div>
+  
+  <div id="dataList"></div>
+  
+  <div class="delete-buttons">
+    <button onclick="submitOldRecordsDeletion()">Seçili Firmaların Eski Kayıtlarını Sil</button>
+    <button onclick="submitAllRecordsDeletion()">Seçili Firmaların TÜM Kayıtlarını Sil</button>
+  </div>
+
+  <script>
+    let allFirms = [];
+
+    function filterData() {
+      let input = document.getElementById("filterInput").value.toLowerCase();
+      let items = document.querySelectorAll("#dataList .selectItem");
       
-      <div id="loading" style="text-align: center; padding: 20px;">
-        <div class="spinner"></div> Veriler Yükleniyor...
-      </div>
-
-      <div id="filters" style="display: none;">
-        <div class="filter-group">
-          <div id="filter-b-container" class="column-filter">
-            <h4>İş Yerinin Adı (B Sütunu)</h4>
-            <input type="text" id="b-search-input" class="search-box" placeholder="İş Yeri Ara..." oninput="debounceUpdateFilters()">
-            <div id="workplace-options" class="filter-options"></div>
-          </div>
-          
-          <div id="filter-cd-container" class="column-filter">
-            <h4>Adı Soyadı (C ve D Sütunları)</h4>
-            <input type="text" id="cd-search-input" class="search-box" placeholder="Ad Soyad Ara..." oninput="debounceUpdateFilters()">
-            <div id="combined-names-options" class="filter-options"></div>
-            <p>Toplam Seçilen Kişi: <span id="selected-count">0</span></p>
-          </div>
-        </div>
-      </div>
-      
-      <div class="button-container">
-        <button id="cancel-button" onclick="google.script.host.close()">İptal</button>
-        <button id="generate-button" onclick="generateDocuments()">Belgeleri Oluştur</button>
-      </div>
-    </div>
-
-    <script>
-      let timeoutId;
-      
-      function createCheckboxes(containerId, values, nameAttribute) {
-        const container = document.getElementById(containerId);
-        container.innerHTML = '';
-        
-        const selectAllDiv = document.createElement('div');
-        const selectAllCheckbox = document.createElement('input');
-        selectAllCheckbox.type = 'checkbox';
-        selectAllCheckbox.id = `${containerId}-all`;
-        selectAllCheckbox.checked = true; // Her yeni filtrede tümünü seçili yap
-        selectAllCheckbox.onclick = () => {
-          toggleAll(containerId, selectAllCheckbox.checked);
-          updateCount();
-        };
-        selectAllDiv.appendChild(selectAllCheckbox);
-        selectAllDiv.appendChild(document.createTextNode('Tümünü Seç / Tümünü Kaldır'));
-        container.appendChild(selectAllDiv);
-
-        const optionsDiv = document.createElement('div');
-        optionsDiv.className = 'filter-options';
-        values.forEach(value => {
-          const label = document.createElement('label');
-          const checkbox = document.createElement('input');
-          checkbox.type = 'checkbox';
-          checkbox.name = nameAttribute;
-          checkbox.value = value;
-          checkbox.checked = true; // Her yeni filtrede tümünü seçili yap
-          checkbox.onclick = () => {
-            updateSelectAll(containerId);
-            updateCount();
-          };
-          label.appendChild(checkbox);
-          label.appendChild(document.createTextNode(value));
-          optionsDiv.appendChild(label);
-        });
-        container.appendChild(optionsDiv);
-      }
-      
-      function toggleAll(containerId, isChecked) {
-        document.querySelectorAll(`#${containerId} input[type="checkbox"][name]`).forEach(checkbox => {
-          checkbox.checked = isChecked;
-        });
-      }
-
-      function updateSelectAll(containerId) {
-        const checkboxes = document.querySelectorAll(`#${containerId} input[type="checkbox"][name]`);
-        const allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
-        document.getElementById(`${containerId}-all`).checked = allChecked;
-      }
-
-      function updateFilters() {
-        const bFilter = document.getElementById('b-search-input').value;
-        const cdFilter = document.getElementById('cd-search-input').value;
-        
-        document.getElementById('workplace-options').innerHTML = '<div style="text-align: center;"><div class="spinner"></div> Yükleniyor...</div>';
-        document.getElementById('combined-names-options').innerHTML = '<div style="text-align: center;"><div class="spinner"></div> Yükleniyor...</div>';
-        
-        google.script.run
-          .withSuccessHandler(data => {
-            if (data && !data.error) {
-              createCheckboxes('workplace-options', data['İş Yerinin Adı'], 'workplace');
-              createCheckboxes('combined-names-options', data['Adı Soyadı'], 'combinedName');
-              updateCount();
-            } else {
-              document.getElementById('loading').innerHTML = data.error || 'Veri yüklenemedi. Lütfen başlık adlarını kontrol edin.';
-            }
-          })
-          .getFilteredData({ bFilter, cdFilter });
-      }
-      
-      function debounceUpdateFilters() {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(updateFilters, 500);
-      }
-
-      function updateCount() {
-        const selectedCount = document.querySelectorAll('#combined-names-options input[type="checkbox"]:checked[name="combinedName"]')?.length || 0;
-        document.getElementById('selected-count').innerText = selectedCount;
-      }
-
-      function getInitialData() {
-        google.script.run
-          .withSuccessHandler(data => {
-            if (data && !data.error) {
-              createCheckboxes('workplace-options', data['İş Yerinin Adı'], 'workplace');
-              createCheckboxes('combined-names-options', data['Adı Soyadı'], 'combinedName');
-              updateCount();
-              
-              document.getElementById('loading').style.display = 'none';
-              document.getElementById('filters').style.display = 'flex';
-            } else {
-              document.getElementById('loading').innerHTML = data.error || 'Veri yüklenemedi. Lütfen başlık adlarını kontrol edin.';
-            }
-          })
-          .getFilteredData({ bFilter: '', cdFilter: '' });
-      }
-      
-      document.addEventListener('DOMContentLoaded', getInitialData);
-
-      function generateDocuments() {
-        const selectedNames = Array.from(document.querySelectorAll('#combined-names-options input[type="checkbox"]:checked[name="combinedName"]')).map(cb => cb.value);
-
-        if (selectedNames.length === 0) {
-          alert('Lütfen en az bir kişi seçin.');
-          return;
+      items.forEach(item => {
+        let firmName = item.querySelector("label").textContent.toLowerCase();
+        if (firmName.includes(input)) {
+          item.style.display = "flex";
+        } else {
+          item.style.display = "none";
         }
+      });
+    }
 
-        google.script.run
-          .withSuccessHandler(response => {
-            if (response.success) {
-              let message = `✅ İşlem tamamlandı! Toplam ${response.totalCount} belgeden ${response.createdCount} adet belge başarıyla oluşturuldu.`;
-              if (response.failedCount > 0) {
-                message += ` ⚠️ ${response.failedCount} adet belge oluşturulurken bir hata oluştu. Lütfen Logger sekmesini kontrol edin.`;
-              }
-              alert(message);
-            } else {
-              alert(`❌ Hata: ${response.message}`);
-            }
-            google.script.host.close();
-          })
-          .generateDocumentsFromFilteredRows({ selectedNames });
+    function selectAll() {
+      document.querySelectorAll("#dataList input").forEach(el => el.checked = true);
+    }
+
+    function selectFiltered() {
+      document.querySelectorAll("#dataList .selectItem").forEach(item => {
+        if (item.style.display !== "none") {
+          item.querySelector("input").checked = true;
+        }
+      });
+    }
+
+    function deselectAll() {
+      document.querySelectorAll("#dataList input").forEach(el => el.checked = false);
+    }
+    
+    function updateList(firms) {
+      allFirms = firms;
+      let dataList = document.getElementById("dataList");
+      dataList.innerHTML = '';
+      if (allFirms.length === 0) {
+        dataList.innerHTML = '<p>Silinebilecek eski kayıt bulunmuyor.</p>';
+      } else {
+        allFirms.forEach(firm => {
+          let div = document.createElement("div");
+          div.classList.add("selectItem");
+          div.innerHTML = `<input type="checkbox" value="${firm}" id="${firm}"><label for="${firm}">${firm}</label>`;
+          dataList.appendChild(div);
+        });
       }
-    </script>
-  </body>
+      filterData();
+    }
+
+    function submitOldRecordsDeletion() {
+      let selectedValues = Array.from(document.querySelectorAll("#dataList input:checked"))
+        .map(input => input.value);
+      
+      if (selectedValues.length === 0) {
+        alert("Lütfen silmek istediğiniz firmaları seçin.");
+        return;
+      }
+      
+      google.script.run
+        .withSuccessHandler(function(updatedFirms) {
+          alert("Seçilen firmaların eski kayıtları başarıyla silindi. Liste yenileniyor.");
+          updateList(updatedFirms);
+        })
+        .withFailureHandler(function(error) {
+          alert("Hata: " + error.message);
+        })
+        .deleteOldRecords(selectedValues);
+    }
+
+    function submitAllRecordsDeletion() {
+      let selectedValues = Array.from(document.querySelectorAll("#dataList input:checked"))
+        .map(input => input.value);
+      
+      if (selectedValues.length === 0) {
+        alert("Lütfen silmek istediğiniz firmaları seçin.");
+        return;
+      }
+      
+      if (!confirm("Seçili firmalara ait TÜM kayıtlar silinecek. Emin misiniz?")) {
+        return;
+      }
+
+      google.script.run
+        .withSuccessHandler(function(updatedFirms) {
+          alert("Seçilen firmaların tüm kayıtları başarıyla silindi. Liste yenileniyor.");
+          updateList(updatedFirms);
+        })
+        .withFailureHandler(function(error) {
+          alert("Hata: " + error.message);
+        })
+        .deleteAllRecords(selectedValues);
+    }
+
+    google.script.run.withSuccessHandler(updateList).getUniqueOldFirms();
+  </script>
+</body>
 </html>
