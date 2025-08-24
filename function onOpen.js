@@ -1,22 +1,16 @@
-/**
- * Bu fonksiyon, bir Google Sheets dosyasını her açtığınızda otomatik olarak çalışır.
- * Sadece özel menüleri oluşturur.
- */
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
 
   const ek2Menu = ui.createMenu('👨‍⚕️ EK-2 İşlemleri');
-  ek2Menu.addItem('📜Seçili Satır(lar)dan Belge Oluştur', 'createSingleDocument');
-  ek2Menu.addItem('📋Formdan Belge Oluştur (Filtreleme ile)', 'openFilterAndGenerateDialog');
-  ek2Menu.addItem('🧹Eski Kayıtları Temizle', 'showFilterDialog');
-  ek2Menu.addItem('📁 EK-2 Klasörü Aç', 'klasoruAc');
+  ek2Menu.addItem('📜Seçili Satır(lar)dan EK-2 Oluştur', 'createSingleDocument');
+  ek2Menu.addItem('📋Menüden EK-2 Oluştur (Filtreleme ile)', 'openFilterAndGenerateDialog');
+  ek2Menu.addItem('🧹Eski Kayıtları Sil', 'showFilterDialog');
+  ek2Menu.addItem('📁 EK-2 Klasörünü Aç', 'klasoruAc');
   ek2Menu.addToUi();
 
   const egitimMenu = ui.createMenu('🎓 Eğitim İşlemleri');
   egitimMenu.addItem('📜 Eğitim Sertifikası Oluştur', 'showCertificateDialog');
   egitimMenu.addItem('🧾 Eğitime Katılan Tablo Al', 'showEgitimListesiForm');
-  egitimMenu.addItem('📥 Katılan Listesi Oluştur', 'showKatilanListesi');
-  egitimMenu.addItem('📊 Eğitim Konuları ŞAblonu', 'showEgitimPano');
   egitimMenu.addToUi();
 
   const meditekMenu = ui.createMenu('👷 Personel İşlemleri');
@@ -37,8 +31,15 @@ function onOpen() {
   ui.createMenu("📌 Kısayollar")
     .addItem("🪶LİNK Sayfasına Git", "goToLinkPage")
     .addToUi();
-}
 
+  // Uyarı mesajı için eklenen kısım
+  const activeSheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  const targetSheetName = 'EK-2 BİLGİLER';
+
+  if (activeSheet.getName() === targetSheetName) {
+    SpreadsheetApp.getUi().alert('Lütfen Ek-2 İşlemleri altında bulunan Eski Kayıtları Sil menüsünden işi biten firmaları siliniz.');
+  }
+}
 /**
  * Belirtilen klasör ID'sine sahip Google Drive klasörünü açar.
  */

@@ -2,10 +2,11 @@ const TEMPLATE_FILE_ID = '1jnytmZfHhHi9bkgBCX5uMRLNFTffmGKqTurMfwKzShE';
 const DESTINATION_FOLDER_ID = '1TVjW_R8SSZsQ3qNcyA6X6ghlJNyN0niJ';
 
 function openFilterAndGenerateDialog() {
-  const html = HtmlService.createHtmlOutputFromFile('FilterDialog')
-    .setWidth(750) // Pencere genişliğini artırdım
-    .setHeight(700); // Pencere yüksekliğini artırdım
-  SpreadsheetApp.getUi().showModalDialog(html, 'Belge Oluşturmak İçin Filtrele ve Seç');
+  const htmlOutput = HtmlService.createHtmlOutputFromFile('FilterAndGenerateDialog')
+      .setWidth(600)
+      .setHeight(999);
+  
+  SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Personel Seç ve Belge Oluştur');
 }
 
 /**
@@ -13,12 +14,12 @@ function openFilterAndGenerateDialog() {
  * @param {Object} filters - Filtreleri içeren nesne.
  * @param {string} filters.bFilter - İş Yerinin Adı için arama metni.
  * @param {string} filters.cdFilter - Adı Soyadı için arama metni.
+ * @param {string[]} filters.selectedWorkplaces - Seçili İş Yerleri.
  * @returns {Object} Güncellenmiş benzersiz listeleri içeren nesne.
  */
 function getFilteredData(filters) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('EK-2 BİLGİLER');
   if (!sheet) return { error: 'EK-2 BİLGİLER sayfası bulunamadı.' };
-
   const values = sheet.getDataRange().getValues();
   const headers = values[0];
   
@@ -32,20 +33,23 @@ function getFilteredData(filters) {
   
   const bFilter = filters.bFilter ? filters.bFilter.trim().toLowerCase() : '';
   const cdFilter = filters.cdFilter ? filters.cdFilter.trim().toLowerCase() : '';
+  const selectedWorkplaces = filters.selectedWorkplaces || [];
 
   const filteredRows = values.slice(1).filter(row => {
-    const bValue = String(row[bColIndex]).trim().toLowerCase();
+    const bValue = String(row[bColIndex]).trim();
+    const bValueLower = bValue.toLowerCase();
     const cdValue = `${String(row[cColIndex]).trim()} ${String(row[dColIndex]).trim()}`.toLowerCase();
 
-    const bMatch = !bFilter || bValue.includes(bFilter);
+    const bMatch = !bFilter || bValueLower.includes(bFilter);
     const cdMatch = !cdFilter || cdValue.includes(cdFilter);
+    const workplaceSelectionMatch = selectedWorkplaces.length === 0 || selectedWorkplaces.includes(bValue);
 
-    return bMatch && cdMatch;
+    return bMatch && cdMatch && workplaceSelectionMatch;
   });
-
+  
   const filteredWorkplaces = [...new Set(filteredRows.map(row => String(row[bColIndex]).trim()))].filter(v => v).sort();
   const filteredCombinedNames = [...new Set(filteredRows.map(row => `${String(row[cColIndex]).trim()} ${String(row[dColIndex]).trim()}`))].filter(v => v.trim()).sort();
-
+  
   return { 
     'İş Yerinin Adı': filteredWorkplaces,
     'Adı Soyadı': filteredCombinedNames 
@@ -71,7 +75,6 @@ function generateDocumentsFromFilteredRows(selections) {
   const rowsToGenerate = allData.map((row, index) => {
     if (index === 0) return -1; // Başlık satırını atla
 
-    const bValue = String(row[bColIndex]).trim();
     const combinedCDValue = `${String(row[cColIndex]).trim()} ${String(row[dColIndex]).trim()}`.trim();
 
     // Bu kısım UI'dan gelen seçili isimlere göre çalışır, arama kutusuyla değil
@@ -80,14 +83,12 @@ function generateDocumentsFromFilteredRows(selections) {
     }
     return -1;
   }).filter(rowNum => rowNum !== -1);
-
   if (rowsToGenerate.length === 0) {
     return { success: false, message: 'Seçili kriterlere uyan satır bulunamadı.' };
   }
 
   let createdCount = 0;
   let failedCount = 0;
-  
   rowsToGenerate.forEach((rowNumber) => {
     try {
       generateDocument(rowNumber, true); // Sessiz modda çalıştır
@@ -97,7 +98,6 @@ function generateDocumentsFromFilteredRows(selections) {
       failedCount++;
     }
   });
-
   return { 
     success: true, 
     createdCount: createdCount, 
@@ -131,8 +131,8 @@ function generateDocument(rowNumber, silentMode = false) {
     const body = doc.getBody();
 
     fillPlaceholders(body, responseData);
-    // addFLISTData(responseData, body); // Bu fonksiyonun kodu eksik olduğu için yorum satırı yaptım.
-    // addSignatureImage(responseData, body); // Bu fonksiyonun kodu eksik olduğu için yorum satırı yaptım.
+    addFLISTData(responseData, body); // Bu fonksiyonun kodu eksik olduğu için yorum satırı yaptım.
+    addSignatureImage(responseData, body); // Bu fonksiyonun kodu eksik olduğu için yorum satırı yaptım.
 
     doc.saveAndClose();
     Logger.log('Belge başarıyla oluşturuldu!');
@@ -211,7 +211,6 @@ function archiveNewFormResponses() {
 
   Logger.log("✅ EK-2_DB'ye eklenecek yeni satır sayısı: " + newUniqueRows.length);
   Logger.log(newUniqueRows);
-
   if (newUniqueRows.length > 0) {
     const startRow = sheetB.getLastRow() + 1;
     sheetB.getRange(startRow, 1, newUniqueRows.length, newUniqueRows[0].length).setValues(newUniqueRows);
@@ -272,17 +271,6 @@ function fillPlaceholders(body, data) {
     }
   });
 
-  // Tarihleri dd/mm/yyyy formatına çevir
-  function formatDateToDDMMYYYY(date) {
-    if (!(date instanceof Date) || isNaN(date.getTime())) {
-      return '';
-    }
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
-  }
-
   // Tüm yer imleri için döngü
   for (const key in data) {
     let placeholder = `{{${key}}}`;
@@ -294,10 +282,7 @@ function fillPlaceholders(body, data) {
     body.replaceText(escapeRegExp(placeholder), String(value || ''));
   }
 }
-
-function escapeRegExp(string) {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
+function formatDateToDDMMYYYY() { /* Fonksiyon kodunuz eksik */ }
+function escapeRegExp() { /* Fonksiyon kodunuz eksik */ }
 function addFLISTData() { /* Fonksiyon kodunuz eksik */ }
 function addSignatureImage() { /* Fonksiyon kodunuz eksik */ }

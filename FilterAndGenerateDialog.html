@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 10px;
+        background-color: #f4f4f4;
+        color: #333;
+      }
+      .container {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        padding: 10px;
+      }
+      .filter-group {
+        display: flex;
+        gap: 20px;
+      }
+      .column-filter {
+        flex: 1;
+        border: 1px solid #ddd;
+        padding: 15px;
+        border-radius: 8px;
+        background-color: #fff;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      }
+      .column-filter h4 {
+        margin-top: 0;
+        font-size: 16px;
+        color: #005A8D;
+      }
+      .filter-options {
+        max-height: 400px;
+        overflow-y: auto;
+        border-top: 1px solid #eee;
+        padding-top: 10px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        cursor: pointer;
+      }
+      input[type="checkbox"] {
+        margin-right: 5px;
+      }
+      .select-all {
+        font-weight: bold;
+      }
+      .search-box {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+      .search-box::placeholder {
+        color: #999;
+      }
+      .button-group {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+      }
+      .button-group button {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: background-color 0.3s;
+      }
+      .generate-button {
+        background-color: #005A8D;
+        color: white;
+      }
+      .generate-button:hover {
+        background-color: #00456b;
+      }
+      .cancel-button {
+        background-color: #ccc;
+        color: #333;
+      }
+      .cancel-button:hover {
+        background-color: #bbb;
+      }
+      #loading {
+        text-align: center;
+        padding: 50px;
+        font-size: 18px;
+        color: #555;
+      }
+      .selected-count {
+        font-size: 12px;
+        color: #666;
+        margin-left: auto;
+        font-weight: normal;
+      }
+      .title-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container" id="filters">
+      <div class="filter-group">
+        <div class="column-filter">
+          <div class="title-row">
+            <h4>İş Yerinin Adı</h4>
+            <span id="workplace-count" class="selected-count"></span>
+          </div>
+          <input type="text" id="workplace-search" class="search-box" placeholder="İş Yeri Ara..." oninput="debounceFilterList('workplace-options', this.value, 'workplace')">
+          <div id="workplace-options" class="filter-options">
+            <label class="select-all">
+              <input type="checkbox" id="workplace-options-all" checked onchange="toggleAll('workplace-options', this.checked); updateSelectAll('combined-names-options'); debounceUpdateFilters();">Tümünü Seç/Kaldır
+            </label>
+          </div>
+        </div>
+
+        <div class="column-filter">
+          <div class="title-row">
+            <h4>Adı Soyadı</h4>
+            <span id="combined-names-count" class="selected-count"></span>
+          </div>
+          <input type="text" id="combined-names-search" class="search-box" placeholder="Adı Soyadı Ara..." oninput="debounceFilterList('combined-names-options', this.value, 'combinedName')">
+          <div id="combined-names-options" class="filter-options">
+            <label class="select-all">
+              <input type="checkbox" id="combined-names-options-all" checked onchange="toggleAll('combined-names-options', this.checked); updateSelectAll('combined-names-options');">Tümünü Seç/Kaldır
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="button-group">
+        <button class="cancel-button" onclick="google.script.host.close()">Kapat</button>
+        <button class="generate-button" onclick="generateDocuments()">Belge Oluştur</button>
+      </div>
+    </div>
+    <div id="loading" style="display: none;">Veriler yükleniyor...</div>
+
+    <script>
+      let initialData = null;
+      let updateTimeout = null;
+      let lastCall = Date.now();
+      const DEBOUNCE_DELAY = 300; // ms
+
+      function debounceUpdateFilters() {
+        clearTimeout(updateTimeout);
+        updateTimeout = setTimeout(() => {
+          updateFilters();
+        }, DEBOUNCE_DELAY);
+      }
+
+      function updateFilters() {
+        const workplaceSearch = document.getElementById('workplace-search').value.toLowerCase();
+        const namesSearch = document.getElementById('combined-names-search').value.toLowerCase();
+        const selectedWorkplaces = getSelectedValues('workplace-options', 'workplace');
+
+        google.script.run
+          .withSuccessHandler(data => {
+            if (data.error) {
+              alert('Hata: ' + data.error);
+              return;
+            }
+            populateFilterOptions('workplace-options', data['İş Yerinin Adı'], 'workplace', workplaceSearch);
+            populateFilterOptions('combined-names-options', data['Adı Soyadı'], 'combinedName', namesSearch);
+          })
+          .getFilteredData({ 
+            bFilter: workplaceSearch, 
+            cdFilter: namesSearch, 
+            selectedWorkplaces: selectedWorkplaces
+          });
+      }
+
+      function getSelectedValues(containerId, name) {
+        const checkboxes = document.querySelectorAll(`#${containerId} input[name="${name}"]:checked`);
+        return Array.from(checkboxes).map(cb => cb.value);
+      }
+      
+      function populateFilterOptions(containerId, data, name, filterText) {
+        const container = document.getElementById(containerId);
+        const searchInput = document.getElementById(`${containerId.split('-')[0]}-search`);
+        const selectAllCheckbox = document.getElementById(`${containerId}-all`);
+        
+        // Önceki seçenekleri temizle
+        const oldOptions = container.querySelectorAll(`label:not(.select-all)`);
+        oldOptions.forEach(label => label.remove());
+
+        // Seçenekleri oluştur
+        data.forEach(item => {
+          if (!filterText || item.toLowerCase().includes(filterText)) {
+            const label = document.createElement('label');
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.name = name;
+            checkbox.value = item;
+            checkbox.checked = true;
+            checkbox.onclick = () => {
+              updateSelectAll(containerId);
+              debounceUpdateFilters();
+            };
+            label.appendChild(checkbox);
+            label.appendChild(document.createTextNode(item));
+            container.appendChild(label);
+          }
+        });
+        updateCount();
+        updateSelectAll(containerId);
+      }
+
+      function toggleAll(containerId, checked) {
+        const checkboxes = document.querySelectorAll(`#${containerId} input[type="checkbox"]:not(#${containerId}-all)`);
+        checkboxes.forEach(checkbox => checkbox.checked = checked);
+        updateCount();
+      }
+
+      function updateSelectAll(containerId) {
+        const allCheckbox = document.getElementById(`${containerId}-all`);
+        const checkboxes = document.querySelectorAll(`#${containerId} input[type="checkbox"]:not(#${containerId}-all)`);
+        const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+        const totalCount = checkboxes.length;
+        allCheckbox.checked = checkedCount === totalCount;
+        allCheckbox.indeterminate = checkedCount > 0 && checkedCount < totalCount;
+        updateCount();
+      }
+
+      function updateCount() {
+        const workplaceCount = document.querySelectorAll('#workplace-options input[type="checkbox"]:not(#workplace-options-all):checked').length;
+        const totalWorkplaceCount = document.querySelectorAll('#workplace-options input[type="checkbox"]:not(#workplace-options-all)').length;
+        document.getElementById('workplace-count').textContent = `(${workplaceCount}/${totalWorkplaceCount} Seçili)`;
+
+        const namesCount = document.querySelectorAll('#combined-names-options input[type="checkbox"]:not(#combined-names-options-all):checked').length;
+        const totalNamesCount = document.querySelectorAll('#combined-names-options input[type="checkbox"]:not(#combined-names-options-all)').length;
+        document.getElementById('combined-names-count').textContent = `(${namesCount}/${totalNamesCount} Seçili)`;
+      }
+
+      function debounceFilterList(containerId, filterText, name) {
+        clearTimeout(updateTimeout);
+        updateTimeout = setTimeout(() => {
+          filterList(containerId, filterText, name);
+        }, DEBOUNCE_DELAY);
+      }
+
+      function filterList(containerId, filterText, name) {
+        if (!initialData) return;
+
+        const filteredWorkplaces = initialData['İş Yerinin Adı'].filter(item => item.toLowerCase().includes(document.getElementById('workplace-search').value.toLowerCase()));
+        const filteredNames = initialData['Adı Soyadı'].filter(item => item.toLowerCase().includes(document.getElementById('combined-names-search').value.toLowerCase()));
+
+        populateFilterOptions('workplace-options', filteredWorkplaces, 'workplace', document.getElementById('workplace-search').value.toLowerCase());
+        populateFilterOptions('combined-names-options', filteredNames, 'combinedName', document.getElementById('combined-names-search').value.toLowerCase());
+        updateFilters(); // Seçime göre güncelleme yap
+      }
+
+      function getInitialData() {
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('filters').style.display = 'none';
+        
+        const selectedWorkplaces = getSelectedValues('workplace-options', 'workplace');
+        
+        google.script.run
+          .withSuccessHandler(data => {
+            if (!data.error) {
+              initialData = data;
+              populateFilterOptions('workplace-options', data['İş Yerinin Adı'], 'workplace', '');
+              populateFilterOptions('combined-names-options', data['Adı Soyadı'], 'combinedName', '');
+              document.getElementById('loading').style.display = 'none';
+              document.getElementById('filters').style.display = 'flex';
+            } else {
+              document.getElementById('loading').innerHTML = data.error || 'Veri yüklenemedi. Lütfen başlık adlarını kontrol edin.';
+            }
+          })
+          .getFilteredData({ bFilter: '', cdFilter: '', selectedWorkplaces: selectedWorkplaces });
+      }
+      
+      document.addEventListener('DOMContentLoaded', getInitialData);
+
+      function generateDocuments() {
+        const selectedNames = Array.from(document.querySelectorAll('#combined-names-options input[type="checkbox"]:checked[name="combinedName"]')).map(cb => cb.value);
+
+        if (selectedNames.length === 0) {
+          alert('Lütfen en az bir kişi seçin.');
+          return;
+        }
+
+        google.script.run
+          .withSuccessHandler(response => {
+            if (response.success) {
+              let message = `✅ İşlem tamamlandı! Toplam ${response.totalCount} belgeden ${response.createdCount} adet belge başarıyla oluşturuldu.`;
+              if (response.failedCount > 0) {
+                message += ` ⚠️ ${response.failedCount} adet belge oluşturulurken bir hata oluştu. Lütfen Logger sekmesini kontrol edin.`;
+              }
+              alert(message);
+            } else {
+              alert(`❌ Hata: ${response.message}`);
+            }
+            google.script.host.close();
+          })
+          .generateDocumentsFromFilteredRows({ selectedNames });
+      }
+    </script>
+  </body>
+</html>

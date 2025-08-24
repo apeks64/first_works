@@ -88,6 +88,7 @@ function formatDateToDDMMYYYY(date) {
     return `${day}/${month}/${year}`;
 }
 
+
 /**
  * 'dd/MM/yyyy' formatında bir string'i Date nesnesine dönüştürür.
  * @param {string} dateString Ayrıştırılacak tarih string'i.
