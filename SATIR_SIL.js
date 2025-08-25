@@ -1,7 +1,7 @@
 /**
  * FilterAndDeleteUI HTML dosyasını içeren bir modal diyalog gösterir.
  */
-function showFilterDialog() {
+function FilterDialog() {
   const ui = SpreadsheetApp.getUi();
   const activeSheetName = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet().getName();
   const targetSheetName = "EK-2 BİLGİLER";
@@ -52,7 +52,7 @@ function getUniqueOldFirms() {
     
     if (timeStamp instanceof Date) {
       const diffInDays = (today.getTime() - timeStamp.getTime()) / (1000 * 60 * 60 * 24);
-      if (diffInDays >= 7) {
+      if (diffInDays >= 0) {
         uniqueOldFirms.add(firmName);
       }
     }
@@ -122,18 +122,4 @@ function deleteAllRecords(selectedFirms) {
   });
   
   return getUniqueOldFirms();
-}
-
-/**
- * Belirtilen klasör ID'sine sahip Google Drive klasörünü açar.
- */
-function klasoruAc() {
-  var folderId = '1TVjW_R8SSZsQ3qNcyA6X6ghlJNyN0niJ'; 
-  var url = 'https://drive.google.com/drive/folders/' + folderId;
-
-  var html = HtmlService.createHtmlOutput('<script>window.open("' + url + '", "_blank");google.script.host.close();</script>')
-      .setWidth(100)
-      .setHeight(10);
-  
-  SpreadsheetApp.getUi().showModalDialog(html, 'Klasör Açılıyor...');
 }

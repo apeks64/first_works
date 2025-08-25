@@ -4,7 +4,7 @@ function onOpen() {
   const ek2Menu = ui.createMenu('👨‍⚕️ EK-2 İşlemleri');
   ek2Menu.addItem('📜Seçili Satır(lar)dan EK-2 Oluştur', 'createSingleDocument');
   ek2Menu.addItem('📋Menüden EK-2 Oluştur (Filtreleme ile)', 'openFilterAndGenerateDialog');
-  ek2Menu.addItem('🧹Eski Kayıtları Sil', 'showFilterDialog');
+  ek2Menu.addItem('🧹Eski Kayıtları Sil', 'FilterDialog');
   ek2Menu.addItem('📁 EK-2 Klasörünü Aç', 'klasoruAc');
   ek2Menu.addToUi();
 
@@ -32,14 +32,30 @@ function onOpen() {
     .addItem("🪶LİNK Sayfasına Git", "goToLinkPage")
     .addToUi();
 
-  // Uyarı mesajı için eklenen kısım
+  // Uyarı mesajı - sadece onOpen'da
   const activeSheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   const targetSheetName = 'EK-2 BİLGİLER';
 
   if (activeSheet.getName() === targetSheetName) {
     SpreadsheetApp.getUi().alert('Lütfen Ek-2 İşlemleri altında bulunan Eski Kayıtları Sil menüsünden işi biten firmaları siliniz.');
   }
+
+  // Global değişken tanımla
+  globalThis.ek2WarningShown = true;
 }
+
+// Sayfa değişikliklerini takip et
+function onSelectionChange(e) {
+  const activeSheet = e.source.getActiveSheet();
+  const targetSheetName = 'EK-2 BİLGİLER';
+  
+  // Eğer EK-2 BİLGİLER sayfasına geçildiyse ve daha önce uyarı gösterilmediyse
+  if (activeSheet.getName() === targetSheetName && !globalThis.ek2WarningShown) {
+    SpreadsheetApp.getUi().alert('Lütfen Ek-2 İşlemleri altında bulunan Eski Kayıtları Sil menüsünden işi biten firmaları siliniz.');
+    globalThis.ek2WarningShown = true;
+  }
+}
+
 /**
  * Belirtilen klasör ID'sine sahip Google Drive klasörünü açar.
  */
