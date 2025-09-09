@@ -2,12 +2,12 @@ function kontrolEtVeMailGonder() {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('FLIST');
   var data = sheet.getDataRange().getValues();
 
-  var firmaColumnIndex = 0; // A
-  var sgknoColumnIndex = 2; // C
-  var ilColumnIndex = 9;    // J
-  var uzmanColumnIndex = 14; // O
-  var tarihColumnIndex = 24; // Y
-  var renkColumnIndex = 0; // A sütunu baz alınarak renk kontrolü
+  var firmaColumnIndex = 1; // A
+  var sgknoColumnIndex = 3; // C
+  var ilColumnIndex = 10;    // J
+  var uzmanColumnIndex = 15; // O
+  var tarihColumnIndex = 25; // Y
+  var renkColumnIndex = 1; // A sütunu baz alınarak renk kontrolü
 
   var today = new Date();
 

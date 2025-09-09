@@ -1,35 +1,42 @@
 {
   "timeZone": "Europe/Istanbul",
   "dependencies": {
-    "enabledAdvancedServices": [{
-      "userSymbol": "Drive",
-      "serviceId": "drive",
-      "version": "v3"
-    }, {
-      "userSymbol": "Docs",
-      "serviceId": "docs",
-      "version": "v1"
-    }, {
-      "userSymbol": "Gmail",
-      "serviceId": "gmail",
-      "version": "v1"
-    }]
+    "enabledAdvancedServices": [
+      {
+        "userSymbol": "Drive",
+        "serviceId": "drive",
+        "version": "v3"
+      },
+      {
+        "userSymbol": "Docs",
+        "serviceId": "docs",
+        "version": "v1"
+      },
+      {
+        "userSymbol": "Gmail",
+        "serviceId": "gmail",
+        "version": "v1"
+      }
+    ]
   },
   "webapp": {
-    "access": "ANYONE_ANONYMOUS",
-    "executeAs": "USER_DEPLOYING"
+    "executeAs": "USER_DEPLOYING",
+    "access": "ANYONE_ANONYMOUS"
   },
   "exceptionLogging": "STACKDRIVER",
   "runtimeVersion": "V8",
   "sheets": {
-    "macros": [{
-      "menuName": "satır_sil",
-      "functionName": "myFunction",
-      "defaultShortcut": "Ctrl+Alt+Shift+0"
-    }, {
-      "menuName": "GIDA LİSTESİ ALMA",
-      "functionName": "myFunction",
-      "defaultShortcut": "Ctrl+Alt+Shift+1"
-    }]
+    "macros": [
+      {
+        "menuName": "satır_sil",
+        "functionName": "myFunction",
+        "defaultShortcut": "Ctrl+Alt+Shift+0"
+      },
+      {
+        "menuName": "GIDA LİSTESİ ALMA",
+        "functionName": "myFunction",
+        "defaultShortcut": "Ctrl+Alt+Shift+1"
+      }
+    ]
   }
 }

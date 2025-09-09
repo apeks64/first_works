@@ -126,14 +126,25 @@ function createGmailDraft(fileIds) {
 
   if (files.length > 0) {
     const firstFileName = files[0].getName();
+
+    // FLIST içindeki başlık satırını bul
+    const headerRow = data[0];
+    const emailIndex = headerRow.indexOf('E_POSTA'); // 'E-Posta' sütununun indeksini dinamik olarak bul
+    const unvanIndex = headerRow.indexOf('UNVANI'); // 'UNVANI' sütununun indeksini dinamik olarak bul
+    
+    // Eğer gerekli sütunlar bulunamazsa hata döndür
+    if (emailIndex === -1 || unvanIndex === -1) {
+      return '❌ Hata: "FLIST" sayfasında "E-Posta" veya "UNVANI" sütunu bulunamadı.';
+    }
+
     // Dosya adının ilk 7 karakterini al, eğer dosya adı en az 7 karakterliyse
     const matchKey = firstFileName.length >= 7 ? firstFileName.substring(0, 7) : firstFileName;
 
     // FLIST içinde eşleşen satırı bul
     for (let i = 1; i < data.length; i++) {
-      const unvan = data[i][0]; // A sütunu (UNVANI)
+      const unvan = data[i][unvanIndex];
       if (unvan && unvan.toString().startsWith(matchKey)) {
-        const emails = data[i][12]; // M sütunu (index 12)
+        const emails = data[i][emailIndex];
         if (emails) {
           toField = emails.split(',').map(email => email.trim()).join(',');
         }
@@ -141,6 +152,7 @@ function createGmailDraft(fileIds) {
       }
     }
   }
+
   const htmlBody = `
     <p style="font-size: 15px;">Sayın Yetkili,</p>
     <p>İSG hizmetleri kapsamında aşağıda belirtilen belgeleri ekte bilgilerinize sunuyoruz:</p>

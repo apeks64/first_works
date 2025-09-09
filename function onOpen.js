@@ -22,6 +22,7 @@ function onOpen() {
   const flistMenu = ui.createMenu('🏭 Firma İşlemleri');
   flistMenu.addItem("📋 Saha Tablosu Al", "showSahaTablosu");
   flistMenu.addItem('🔄 Atamalar Sayfasını Güncelle', 'importLatestExcelToAtamalar');
+  flistMenu.addItem('⏱️Personel Dakika Durumu Göster', 'showPersonelDurumDialog')
   flistMenu.addItem('🔧 Veri Aktarımını Çalıştır', 'tumIslemleriCalistir');
   flistMenu.addItem('📍 İlçe Bilgisini Güncelle (Manuel)', 'logUnmatchedDistricts');
   flistMenu.addItem('📆 Yıllık Süreleri Hesapla (Manuel)', 'hesaplaVeYaz');

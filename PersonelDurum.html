@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      body { font-family: Arial, sans-serif; padding: 10px; }
+      table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+      th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+      th { background: #e8f4f8; }
+      tr:nth-child(even) { background: #f9f9f9; }
+    </style>
+    <script>
+      function loadData() {
+        google.script.run.withSuccessHandler(function(data) {
+          const tbody = document.getElementById("personelTableBody");
+          tbody.innerHTML = "";
+          data.forEach(function(item, index) {
+            const tr = document.createElement("tr");
+            tr.innerHTML = "<td>" + (index + 1) + "</td><td>" + item.adSoyad + "</td><td>" + item.toplamSure + "</td>";
+            tbody.appendChild(tr);
+          });
+        }).getPersonelSureler();
+      }
+      window.onload = loadData;
+    </script>
+  </head>
+  <body>
+    <h3>Personel Dakika Durumu</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Ad Soyad</th>
+          <th>Toplam Süre (dk)</th>
+        </tr>
+      </thead>
+      <tbody id="personelTableBody">
+        <tr><td colspan="3">Yükleniyor...</td></tr>
+      </tbody>
+    </table>
+  </body>
+</html>
